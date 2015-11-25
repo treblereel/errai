@@ -21,7 +21,7 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>errai-bus-demo-stress-test</module>
+<!--     <module>errai-bus-demo-stress-test</module>
     <module>errai-bus-demo-stock</module>
     <module>errai-cdi-demo-mobile</module>
     <module>errai-cdi-demo-tagcloud</module>
@@ -30,7 +30,8 @@
     <module>errai-jpa-demo-todo-list</module>
     <module>errai-jaxrs-demo-crud</module>
     <module>errai-ui-demo-i18n</module>    
-    <module>errai-security-demo</module>
+    <module>errai-security-demo</module> -->
+    <module>errai-jms-demo</module>
   </modules>
 
 </project>
