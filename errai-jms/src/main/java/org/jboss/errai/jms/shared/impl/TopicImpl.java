@@ -1,7 +1,11 @@
 package org.jboss.errai.jms.shared.impl;
 
 import javax.jms.Topic;
-
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 public class TopicImpl implements Topic {
   private String topicName;
 

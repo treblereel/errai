@@ -1,12 +1,19 @@
-package org.jboss.errai.demo.jms.shared;
+package org.jboss.errai.demo.jms.client.shared;
 
 import java.io.Serializable;
 import java.util.Date;
 
 import org.jboss.errai.common.client.api.annotations.Portable;
 
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 @Portable
 public class User implements Serializable {
+  
+  private static final long serialVersionUID = 1L;
   private String name;
   private Date age;
   private Boolean alive;

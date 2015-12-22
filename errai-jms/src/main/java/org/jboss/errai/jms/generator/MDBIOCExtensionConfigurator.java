@@ -7,8 +7,16 @@ import org.jboss.errai.ioc.rebind.ioc.extension.IOCExtensionConfigurator;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.InjectionContext;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.WiringElementType;
 
+
+/**
+ * Used on generation stage, we want MDBeans to be singletons.
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
+
 @IOCExtension
-public class MDBFactoryIOCExtension implements IOCExtensionConfigurator {
+public class MDBIOCExtensionConfigurator implements IOCExtensionConfigurator {
 
   @Override
   public void configure(IOCProcessingContext context,

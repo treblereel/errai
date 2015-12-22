@@ -11,11 +11,12 @@ import javax.jms.TextMessage;
 
 import org.slf4j.Logger;
 
+
 /**
  * 
- * @author chani
- * Session.AUTO_ACKNOWLEDGE/CLIENT_ACKNOWLEDGE:
+ * @author Dmitrii Tikhomirov
  */
+
 @MessageDriven(name = "HelloWorldQueueMDB", activationConfig = {
     @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "queue/HelloWorldQueueMDB"),
     @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "javax.jms.Queue"),
@@ -25,20 +26,8 @@ public class JmsDemoMDBQueue implements MessageListener {
   @Inject
   private JmsDemoClient jmsDemoClient;
   
-  @Inject
-  private Logger logger;
-
   @Override
   public void onMessage(Message message) {
-    try {
-      TextMessage textMessage = (TextMessage) message;
-      
-      if(jmsDemoClient !=null){
-        jmsDemoClient.showIncomeMessage(this.getClass().getSimpleName() + ": " + textMessage.getText());
-      }
-    } catch (JMSException e) {
-      logger.error(e.getMessage());
-    }
-    //throw new EJBException();
+    jmsDemoClient.showIncomeMessage(Utils.extractStringFromMessage(message));
   }
 }

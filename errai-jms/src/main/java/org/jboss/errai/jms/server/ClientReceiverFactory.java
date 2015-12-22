@@ -6,6 +6,12 @@ import javax.inject.Named;
 import javax.jms.Destination;
 import javax.jms.Topic;
 
+/**
+ * Return instance of suitable receiver
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 @Stateless
 public class ClientReceiverFactory {
 

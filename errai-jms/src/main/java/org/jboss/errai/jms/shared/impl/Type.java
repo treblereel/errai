@@ -1,7 +1,11 @@
 package org.jboss.errai.jms.shared.impl;
 
 import org.jboss.errai.common.client.api.annotations.Portable;
-
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 @Portable
 public class Type {
 

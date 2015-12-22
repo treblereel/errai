@@ -57,17 +57,6 @@
 			<scope>test</scope>
 		</dependency>
 
-<!-- 		<dependency>
-			<groupId>com.google.inject</groupId>
-			<artifactId>guice</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava-gwt</artifactId>
-			<scope>compile</scope>
-		</dependency> -->
-
 		<dependency>
 			<groupId>org.jboss.errai</groupId>
 			<artifactId>errai-bus</artifactId>
@@ -86,6 +75,7 @@
 		<dependency>
 			<groupId>org.jboss.logging</groupId>
 			<artifactId>jboss-logging</artifactId>
+			<scope>provided</scope>
 		</dependency>
 
 		<dependency>
@@ -125,16 +115,6 @@
 			<!-- This should not be packaged with the Errai Distro. There are no runtime 
 				dependencies on it and it breaks deployment on JBoss AS and Tomcat -->
 			<scope>provided</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
 		</dependency>
 
 	</dependencies>

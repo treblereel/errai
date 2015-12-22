@@ -24,6 +24,14 @@ import org.jboss.errai.jms.client.local.MessageDrivenBeanDecorator;
 
 import com.google.gwt.core.ext.GeneratorContext;
 
+/**
+ * This decorator will add startup functionality to MessageDrivenBeanStarter 
+ * which will bootup all client side MDBeans.
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
+
 @CodeDecorator
 public class MessageDrivenBeanStarterDecorator extends
         IOCDecoratorExtension<MessageDrivenBeanDecorator> {

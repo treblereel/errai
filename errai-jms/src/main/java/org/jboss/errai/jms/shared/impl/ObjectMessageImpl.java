@@ -7,7 +7,11 @@ import javax.jms.JMSException;
 import javax.jms.ObjectMessage;
 
 import org.jboss.errai.bus.client.api.messaging.Message;
-
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 public class ObjectMessageImpl extends MessageImpl implements ObjectMessage {
 
   private static final long serialVersionUID = 1L;

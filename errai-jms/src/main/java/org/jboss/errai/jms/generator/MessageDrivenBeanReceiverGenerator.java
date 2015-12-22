@@ -19,8 +19,7 @@ import org.jboss.errai.jms.server.ClientReceiver;
 import org.jboss.errai.jms.server.ClientReceiverFactory;
 import org.jboss.errai.jms.shared.ErraiJMSMDBClientUtil;
 import org.jboss.errai.jms.util.ErraiJMSMDBUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 import com.google.gwt.core.ext.GeneratorContext;
 import com.sun.codemodel.JAnnotationArrayMember;
@@ -36,8 +35,15 @@ import com.sun.codemodel.JMethod;
 import com.sun.codemodel.JMod;
 import com.sun.codemodel.JPackage;
 import com.sun.codemodel.JTryBlock;
-import com.sun.codemodel.JType;
 import com.sun.codemodel.JVar;
+
+/**
+ * Construct server side MDBean based on Client side configuration. Bean will be
+ * located on "org.jboss.errai.server.mdb" package.
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 
 public class MessageDrivenBeanReceiverGenerator {
 
@@ -45,62 +51,34 @@ public class MessageDrivenBeanReceiverGenerator {
   public static final String MDB_PARAM_NAME = "MessageDrivenBeanName";
   public static final String SERVER_MDB_PACKAGE_NAME = "org.jboss.errai.server.mdb";
 
-  public MessageDrivenBeanReceiverGenerator(Decorable decorable,
-          MessageDrivenBeanConfiguration config) {
+  public MessageDrivenBeanReceiverGenerator(Decorable decorable, MessageDrivenBeanConfiguration config) {
 
-    GeneratorContext generatorContext = decorable.getInjectionContext()
-            .getProcessingContext().getGeneratorContext();
+    GeneratorContext generatorContext = decorable.getInjectionContext().getProcessingContext().getGeneratorContext();
 
-    String outputDirCdt = ErraiJMSMDBUtil
-            .getOutputDirCandidate(generatorContext);
+    String outputDirCdt = ErraiJMSMDBUtil.getOutputDirCandidate(generatorContext);
     generateServerRepeater(config, outputDirCdt);
   }
 
-  private String generateFullClassPath(String path,
-          MessageDrivenBeanConfiguration config) {
-    return path
-            + "/"
-            + ErraiJMSMDBClientUtil
-                    .replaceDotsWithSlashes(SERVER_MDB_PACKAGE_NAME) + "/"
+  private String generateFullClassPath(String path, MessageDrivenBeanConfiguration config) {
+    return path + "/" + ErraiJMSMDBClientUtil.replaceDotsWithSlashes(SERVER_MDB_PACKAGE_NAME) + "/"
             + config.getClassName() + "Receiver.java";
   }
 
-  private void generateServerRepeater(MessageDrivenBeanConfiguration config,
-          final String outputPath) {
+  private void generateServerRepeater(MessageDrivenBeanConfiguration config, final String outputPath) {
     final File outputDir = new File(outputPath + File.separator);
     if (!outputDir.exists())
       outputDir.mkdirs();
     writeCodeModel(config, outputDir.getAbsolutePath());
   }
 
-  // Method to get JType based on any String Value
-  public JType getTypeDetailsForCodeModel(JCodeModel jCodeModel, String type) {
-    if (type.equals("Unsigned32")) {
-      return jCodeModel.LONG;
-    }
-    else if (type.equals("Unsigned64")) {
-      return jCodeModel.LONG;
-    }
-    else if (type.equals("Integer32")) {
-      return jCodeModel.INT;
-    }
-    else if (type.equals("Integer64")) {
-      return jCodeModel.LONG;
-    }
-    else if (type.equals("Enumerated")) {
-      return jCodeModel.INT;
-    }
-    else if (type.equals("Float32")) {
-      return jCodeModel.FLOAT;
-    }
-    else if (type.equals("Float64")) {
-      return jCodeModel.DOUBLE;
-    }
-    else {
-      return null;
-    }
-  }
-
+  
+  
+  /**
+   * Generate class by specific path calculated in generateFullClassPath method.
+   * 
+   * @param config
+   * @param path
+   */
   public void writeCodeModel(MessageDrivenBeanConfiguration config, String path) {
 
     try {
@@ -110,69 +88,52 @@ public class MessageDrivenBeanReceiverGenerator {
       jc._implements(MessageListener.class);
       JAnnotationUse messageDrivenAnnotation = jc.annotate(MessageDriven.class);
       messageDrivenAnnotation.param("name", config.getMappedName());
-      JAnnotationArrayMember jAnnotationArray = messageDrivenAnnotation
-              .paramArray("activationConfig");
+      JAnnotationArrayMember jAnnotationArray = messageDrivenAnnotation.paramArray("activationConfig");
 
-      JAnnotationUse jAnnotationUseDestinationType = jAnnotationArray
-              .annotate(ActivationConfigProperty.class);
+      JAnnotationUse jAnnotationUseDestinationType = jAnnotationArray.annotate(ActivationConfigProperty.class);
       jAnnotationUseDestinationType.param("propertyName", "destinationType");
-      jAnnotationUseDestinationType.param("propertyValue",
-              config.getDestinationType());
+      jAnnotationUseDestinationType.param("propertyValue", config.getDestinationType());
 
       if (config.getDestinationLookup() != null) {
-        JAnnotationUse jAnnotationUseDestination = jAnnotationArray
-                .annotate(ActivationConfigProperty.class);
+        JAnnotationUse jAnnotationUseDestination = jAnnotationArray.annotate(ActivationConfigProperty.class);
         jAnnotationUseDestination.param("propertyName", "destinationLookup");
-        jAnnotationUseDestination.param("propertyValue",
-                config.getDestinationLookup());
+        jAnnotationUseDestination.param("propertyValue", config.getDestinationLookup());
       }
       else if (config.getDestination() != null) {
-        JAnnotationUse jAnnotationUseDestination = jAnnotationArray
-                .annotate(ActivationConfigProperty.class);
+        JAnnotationUse jAnnotationUseDestination = jAnnotationArray.annotate(ActivationConfigProperty.class);
         jAnnotationUseDestination.param("propertyName", "destination");
-        jAnnotationUseDestination.param("propertyValue",
-                config.getDestination());
+        jAnnotationUseDestination.param("propertyValue", config.getDestination());
       }
 
       if (config.getAcknowledgeMode() != null) {
-        JAnnotationUse jAnnotationUseAcknowledgeMode = jAnnotationArray
-                .annotate(ActivationConfigProperty.class);
+        JAnnotationUse jAnnotationUseAcknowledgeMode = jAnnotationArray.annotate(ActivationConfigProperty.class);
         jAnnotationUseAcknowledgeMode.param("propertyName", "acknowledgeMode");
-        jAnnotationUseAcknowledgeMode.param("propertyValue",config.getAcknowledgeMode());
+        jAnnotationUseAcknowledgeMode.param("propertyValue", config.getAcknowledgeMode());
       }
       jc.constructor(JMod.PUBLIC);
 
       JDocComment jDocComment = jc.javadoc();
-      jDocComment.add("Autogenerated MDB server-side reciever for "
-              + config.getClassName() + " class");
+      jDocComment.add("Autogenerated MDB server-side reciever for " + config.getClassName() + " class");
       // logger's initialization
-      JVar jLoggerVar = jc.field(JMod.PRIVATE | JMod.STATIC | JMod.FINAL,
-              Logger.class, "logger");
-      jLoggerVar.init(jCodeModel.ref(LoggerFactory.class)
-              .staticInvoke("getLogger")
+      JVar jLoggerVar = jc.field(JMod.PRIVATE | JMod.STATIC | JMod.FINAL, Logger.class, "logger");
+      jLoggerVar.init(jCodeModel.ref(Logger.class).staticInvoke("getLogger")
               .arg(JExpr.lit(config.getClassName() + ".class")));
 
-      JVar clientReceiverFactory = jc.field(JMod.PRIVATE,
-              ClientReceiverFactory.class, "clientReceiverFactory");
+      JVar clientReceiverFactory = jc.field(JMod.PRIVATE, ClientReceiverFactory.class, "clientReceiverFactory");
       clientReceiverFactory.annotate(EJB.class);
 
-      JMethod initMethod = jc.method(JMod.PRIVATE,
-              JCodeModel.boxToPrimitive.get(Void.class), "init");
+      JMethod initMethod = jc.method(JMod.PRIVATE, JCodeModel.boxToPrimitive.get(Void.class), "init");
       initMethod.annotate(PostConstruct.class);
 
       JBlock initMethodBody = initMethod.body();
       if (config.getDestinationType().equals("javax.jms.Queue")) {
-        JVar clientQueueListenerVar = jc.field(JMod.PRIVATE,
-                ClientQueueListener.class, "clientQueueListener");
+        JVar clientQueueListenerVar = jc.field(JMod.PRIVATE, ClientQueueListener.class, "clientQueueListener");
         clientQueueListenerVar.annotate(EJB.class);
-        initMethodBody.invoke(clientQueueListenerVar, "subscribe").arg(
-                ErraiJMSMDBClientUtil
-                        .getDestinationFromAnnotatedProperty(config
-                                .getDestinationLookup()));
+        initMethodBody.invoke(clientQueueListenerVar, "subscribe")
+                .arg(ErraiJMSMDBClientUtil.getDestinationFromAnnotatedProperty(config.getDestinationLookup()));
       }
 
-      JMethod onMessageMethod = jc.method(JMod.PUBLIC,
-              JCodeModel.boxToPrimitive.get(Void.class), "onMessage");
+      JMethod onMessageMethod = jc.method(JMod.PUBLIC, JCodeModel.boxToPrimitive.get(Void.class), "onMessage");
       onMessageMethod.param(Message.class, "message");
 
       JBlock onMessageMethodBody = onMessageMethod.body();
@@ -180,18 +141,11 @@ public class MessageDrivenBeanReceiverGenerator {
       JVar jMessage = onMessageMethod.params().get(0);
       JTryBlock jtryBlock = onMessageMethodBody._try();
       JClass jClientReceiver = jCodeModel.ref(ClientReceiver.class);
-      JVar clientReceiver = jtryBlock.body().decl(
-              jClientReceiver,
-              "clientReceiver",
-              clientReceiverFactory.invoke("getClientReceiver").arg(
-                      jMessage.invoke("getJMSDestination")));
-      jtryBlock.body().invoke(clientReceiver, "processToMessageBus")
-              .arg(jMessage);
-      JCatchBlock jCatchBlock = jtryBlock._catch(jCodeModel
-              .ref(JMSException.class));
-      jCatchBlock.body()._throw(
-              JExpr._new(jCodeModel.ref(EJBException.class)).arg(
-                      jCatchBlock.param("_x")));
+      JVar clientReceiver = jtryBlock.body().decl(jClientReceiver, "clientReceiver",
+              clientReceiverFactory.invoke("getClientReceiver").arg(jMessage.invoke("getJMSDestination")));
+      jtryBlock.body().invoke(clientReceiver, "processToMessageBus").arg(jMessage);
+      JCatchBlock jCatchBlock = jtryBlock._catch(jCodeModel.ref(JMSException.class));
+      jCatchBlock.body()._throw(JExpr._new(jCodeModel.ref(EJBException.class)).arg(jCatchBlock.param("_x")));
 
       jCodeModel.build(new File(path));
       String classPath = generateFullClassPath(path, config);

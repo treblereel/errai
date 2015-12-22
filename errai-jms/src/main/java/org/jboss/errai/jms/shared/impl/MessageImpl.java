@@ -16,7 +16,11 @@ import javax.jms.Message;
 import javax.jms.MessageFormatException;
 import javax.jms.Queue;
 import javax.jms.Topic;
-
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 public class MessageImpl implements Serializable, Message {
 
   private static final long serialVersionUID = 1L;

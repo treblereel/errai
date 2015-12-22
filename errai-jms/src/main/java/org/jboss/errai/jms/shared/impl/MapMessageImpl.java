@@ -11,7 +11,11 @@ import javax.jms.JMSException;
 import javax.jms.MapMessage;
 
 import org.jboss.errai.bus.client.api.messaging.Message;
-
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 public class MapMessageImpl extends MessageImpl implements MapMessage {
   private static final long serialVersionUID = 1L;
   public static final byte TYPE = org.jboss.errai.jms.shared.impl.Type.MAP_TYPE;

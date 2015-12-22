@@ -18,12 +18,20 @@ import org.jboss.errai.jms.shared.impl.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageDrivenBeanReceiver {
+/**
+ * Perform a bridge between server and client, it transforms Errai message into
+ * JMS message by calling onMessage(... ) method of client MDB bean.
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 
+public class MessageDrivenBeanReceiver {
+  
   private static final Logger logger = LoggerFactory.getLogger(MessageDrivenBeanReceiver.class);
 
   private String destination;
-  private Boolean autoAcknowledgeMode = true;
+  private Boolean autoAcknowledgeMode = true;   // in general, true by default like all MDBeans.
 
   private String destinationLookup;
   private String destinationType;
@@ -36,35 +44,43 @@ public class MessageDrivenBeanReceiver {
 
   }
 
+  /**
+   * Called when MDB is ready to receive the messages
+   */
   public void finish() {
-    messageBus.subscribe(ErraiJMSMDBClientUtil.getDestinationFromAnnotatedProperty(getDestinationLookup()),
-            new MessageCallback() {
-              @Override
-              public void callback(Message message) {
-                logger.debug("callback "
-                        + ErraiJMSMDBClientUtil.getDestinationFromAnnotatedProperty(getDestinationLookup())
-                        + " message id: " + message.get(String.class, "JMSID") + " toSubject:" + message.getSubject());
-                try {
-                  javax.jms.Message jmsMessage = parseMessage(message);
-                  messageListener.onMessage(jmsMessage);
-                  constractResponce(message, true);
-                } catch (Exception e) {
-                  constractResponce(message, false);
 
-                }
-              }
+    messageBus.subscribe(destination, new MessageCallback() {
+      @Override
+      public void callback(Message message) {
+        logger.debug("callback " + destination + " message id: " + message.get(String.class, "JMSID") + " toSubject:"
+                + message.getSubject());
+        try {
+          javax.jms.Message jmsMessage = convertErraiMessageToJmsMessage(message);
+          messageListener.onMessage(jmsMessage);
+          constractResponse(message, true);
+        } catch (Exception e) {
+          constractResponse(message, false);
 
-              private void constractResponce(Message message, Boolean result) {
-                logger.info("DESTINATION : " + message.get(String.class, "JMSDestinationType"));
-                if (message.get(String.class, "JMSDestinationType").equals(Queue.class.getSimpleName())) {
-                  MessageBuilder.createConversation(message).subjectProvided().signalling()
-                          .with("result", result ? "success" : "failed")
-                          .with("JMSID", message.get(String.class, "JMSID")).noErrorHandling().reply();
-                }
-              }
-            });
+        }
+      }
+      /**
+       * Construct receiver for Queue messages to inform server that MDB got that message,
+       * in other case (like exception ) server will try to send that message to another customer;
+       * 
+       * @param message which has been sent
+       * @param result of the call
+       */
+      private void constractResponse(Message message, Boolean result) {
+        logger.debug("DESTINATION : " + message.get(String.class, "JMSDestinationType"));
+        if (message.get(String.class, "JMSDestinationType").equals(Queue.class.getSimpleName())) {
+          MessageBuilder.createConversation(message).subjectProvided().signalling()
+                  .with("result", result ? "success" : "failed").with("JMSID", message.get(String.class, "JMSID"))
+                  .noErrorHandling().reply();
+        }
+      }
+    });
     logger.debug(" name :" + name + " destinationLookup :" + destinationLookup + " destinationType :" + destinationType
-            + " subscribe :" + ErraiJMSMDBClientUtil.getDestinationFromAnnotatedProperty(getDestinationLookup()));
+            + " subscribe :" + destination);
   }
 
   public String getDestinationLookup() {
@@ -83,10 +99,6 @@ public class MessageDrivenBeanReceiver {
     return name;
   }
 
-  private javax.jms.Message parseMessage(Message message) {
-    return transformToJmsMessage(message);
-  }
-
   public void setAcknowledgeMode(String acknowledgeMode) {
     if (acknowledgeMode.equals("Auto-acknowledge")) {
       this.autoAcknowledgeMode = true;
@@ -102,6 +114,7 @@ public class MessageDrivenBeanReceiver {
 
   public void setDestinationLookup(String destinationLookup) {
     this.destinationLookup = destinationLookup;
+    setDestination(ErraiJMSMDBClientUtil.getDestinationFromAnnotatedProperty(getDestinationLookup()));
   }
 
   public void setDestinationType(String destinationType) {
@@ -120,7 +133,14 @@ public class MessageDrivenBeanReceiver {
     this.name = name;
   }
 
-  private javax.jms.Message transformToJmsMessage(Message message) {
+  
+  /**
+   * Construct Jms message from Errai Bus message
+   * 
+   * @param message
+   * @return instance of javax.jms.Message Corresponding to its type
+   */
+  private javax.jms.Message convertErraiMessageToJmsMessage(Message message) {
     byte type = message.get(byte.class, "type");
     if (type == Type.TEXT_TYPE) {
       return new TextMessageImpl(message);

@@ -3,14 +3,19 @@ package org.jboss.errai.jms.client.local;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
 import javax.ejb.Startup;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.jms.MessageListener;
 
 import org.jboss.errai.ioc.client.container.SyncBeanManager;
-import org.slf4j.Logger;
+
+/**
+ * Main purpose of this class is to get all MDB beans and startup them.
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 
 @Startup
 @ApplicationScoped
@@ -28,12 +33,8 @@ public class MessageDrivenBeanStarter {
 
   public void initMDBBeans() {
     for (Class<? extends MessageListener> clazz : beans) {
-      initMDBBean(clazz);
+      manager.lookupBean(clazz).getInstance();
     }
-  }
-
-  private void initMDBBean(Class<? extends MessageListener> clazz) {
-    manager.lookupBean(clazz).getInstance();
   }
 
 }

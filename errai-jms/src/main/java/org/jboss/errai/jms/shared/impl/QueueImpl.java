@@ -3,7 +3,11 @@ package org.jboss.errai.jms.shared.impl;
 import javax.jms.Queue;
 
 import org.jboss.errai.common.client.api.annotations.Portable;
-
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 @Portable
 public class QueueImpl implements Queue {
   private String queueName;

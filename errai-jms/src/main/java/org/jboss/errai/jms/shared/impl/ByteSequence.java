@@ -16,6 +16,11 @@
  */
 package org.jboss.errai.jms.shared.impl;
 
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 public class ByteSequence {
 
   public byte[] data;

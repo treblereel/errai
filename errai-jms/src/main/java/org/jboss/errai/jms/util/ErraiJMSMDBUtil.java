@@ -1,7 +1,6 @@
 package org.jboss.errai.jms.util;
 
 import java.io.File;
-import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -24,18 +23,14 @@ import javax.jms.Topic;
 
 import org.jboss.errai.bus.client.api.base.MessageBuilder;
 import org.jboss.errai.bus.client.api.builder.MessageBuildCommand;
-import org.jboss.errai.bus.client.api.builder.MessageBuildParms;
 import org.jboss.errai.bus.client.api.builder.MessageBuildSendableWithReply;
-import org.jboss.errai.bus.client.api.messaging.MessageCallback;
 import org.jboss.errai.codegen.meta.MetaClass;
 import org.jboss.errai.codegen.util.ClassChangeUtil;
-import org.jboss.errai.common.client.api.ErrorCallback;
 import org.jboss.errai.common.client.protocols.MessageParts;
 import org.jboss.errai.common.metadata.RebindUtils;
 import org.jboss.errai.common.rebind.ClassListReader;
 import org.jboss.errai.jms.generator.DiscoveryContext;
 import org.jboss.errai.jms.generator.DiscoveryStrategy;
-import org.jboss.errai.jms.server.impl.ClientReceiverQueueImpl;
 import org.jboss.errai.jms.shared.impl.MessageImpl;
 import org.jboss.errai.jms.shared.impl.TextMessageImpl;
 import org.jboss.errai.jms.shared.impl.Type;
@@ -47,14 +42,28 @@ import org.slf4j.LoggerFactory;
 import com.google.gwt.core.ext.GeneratorContext;
 import com.google.gwt.core.ext.typeinfo.JClassType;
 
+/**
+ * Class with server-side utilities, with respect to MarshallersGenerator :-) 
+ * 
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 public class ErraiJMSMDBUtil {
   private static final String[] candidateOutputDirectories = { "target/classes/", "war/WEB-INF/classes/",
       "web/WEB-INF/classes/", "target/war/WEB-INF/classes/", "WEB-INF/classes/", "src/main/webapp/WEB-INF/classes/" };
 
-  private final static Logger logger = LoggerFactory.getLogger("HelloWorldMDBUtil.class");
+  private final static Logger logger = LoggerFactory.getLogger(ErraiJMSMDBUtil.class);
 
   private static final DiscoveryStrategy[] rootDiscoveryStrategies = findDiscoveryStrategies();
 
+  
+  /**
+   * Lookup for suitable folders for server side MDBean 
+   * 
+   * @param generatorContext
+   * @return
+   */
   public static String getOutputDirCandidate(GeneratorContext generatorContext) {
 
     if (rootDiscoveryStrategies == null) {
@@ -215,6 +224,11 @@ public class ErraiJMSMDBUtil {
     } };
   }
 
+  /**
+   * Get JMS message type
+   * @param message to be proceed
+   * @return JMS message type
+   */
   public static byte getMessageType(Message message) {
     if (message instanceof TextMessage) {
       return org.jboss.errai.jms.shared.impl.Type.TEXT_TYPE;
@@ -234,21 +248,6 @@ public class ErraiJMSMDBUtil {
     else {
       return org.jboss.errai.jms.shared.impl.Type.DEFAULT_TYPE;
     }
-  }
-
-  public static Message parseMessage(Message message) {
-    if (message instanceof TextMessage) {
-      return new TextMessageImpl((TextMessage) message);
-    }
-    else {
-      return new MessageImpl(message);
-    }
-  }
-
-  public static org.jboss.errai.jms.generator.MessageDrivenBeanConfiguration parseMessageDrivenBeanAnnotationConfiguration() {// InjectableInstance<MessageDriven>
-                                                                                                                              // instance)
-                                                                                                                              // {
-    return new org.jboss.errai.jms.generator.MessageDrivenBeanConfiguration();
   }
 
   private static void processBytesMessage(Message message,
@@ -296,6 +295,14 @@ public class ErraiJMSMDBUtil {
 
   }
 
+  
+  /**
+   * Populate message with value part
+   * 
+   * @param message
+   * @param messageBuildCommand
+   * @return
+   */
   private static MessageBuildCommand<MessageBuildSendableWithReply> setValue(Message message,
           MessageBuildCommand<MessageBuildSendableWithReply> messageBuildCommand) {
     switch (getMessageType(message)) {
@@ -323,13 +330,19 @@ public class ErraiJMSMDBUtil {
     return messageBuildCommand;
   }
 
+  /**
+   * Prepare JMS message to be sent to Errai Bus
+   * 
+   * @param message
+   * @return MessageBuildCommand
+   * @throws JMSException
+   */
   public static MessageBuildCommand<MessageBuildSendableWithReply> toMessageBusMessage(Message message)
           throws JMSException {
     org.jboss.errai.bus.client.api.messaging.Message busMessage = null;
     String destination = "";
     String destinationType = "";
     String replyTo = "";
-    logger.info("Message type :" + message.getClass() + " corrid " + message.getJMSCorrelationID());
 
     if (message.getJMSDestination() instanceof Queue) {
       destination = ((Queue) message.getJMSDestination()).getQueueName();
@@ -352,8 +365,6 @@ public class ErraiJMSMDBUtil {
     for (@SuppressWarnings("unchecked")
     Enumeration<String> props = message.getPropertyNames(); props.hasMoreElements();) {
       String name = props.nextElement();
-
-      logger.info("> " + name);
       Object prop = message.getObjectProperty(name);
       messageBuildCommand.with(name, prop);
     }

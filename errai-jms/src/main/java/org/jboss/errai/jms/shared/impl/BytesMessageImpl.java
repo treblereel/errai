@@ -14,11 +14,11 @@ import javax.jms.BytesMessage;
 import javax.jms.JMSException;
 
 import org.jboss.errai.bus.client.api.messaging.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Charsets;
-
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 public class BytesMessageImpl extends MessageImpl implements BytesMessage {
   private static final long serialVersionUID = 1L;
   public static final byte TYPE = org.jboss.errai.jms.shared.impl.Type.BYTES_TYPE;

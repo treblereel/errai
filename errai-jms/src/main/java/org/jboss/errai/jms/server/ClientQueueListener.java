@@ -21,10 +21,19 @@ import org.jboss.errai.bus.client.framework.SubscriptionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
+
 @Startup
 @Singleton
 @Named("ClientQueueListener")
 public class ClientQueueListener {
+  private Logger logger = LoggerFactory.getLogger(this.getClass());
+
+  
   class QueueClients {
     private Iterator<String> iterator;
     private Queue<String> sessions = new ConcurrentLinkedQueue<String>();
@@ -79,7 +88,6 @@ public class ClientQueueListener {
     }
   }
 
-  private static final Logger logger = LoggerFactory.getLogger(ClientQueueListener.class);
   private Map<String, QueueClients> cache = new HashMap<String, QueueClients>();
 
   @Inject
@@ -94,7 +102,7 @@ public class ClientQueueListener {
     messageBus.addSubscribeListener(new SubscribeListener() {
       @Override
       public void onSubscribe(SubscriptionEvent event) {
-        logger.warn("\nSubscriptionEvent " + event.getSubject() + " " + event.getSessionId());
+        logger.debug("SubscriptionEvent " + event.getSubject() + " " + event.getSessionId());
         if (cache.containsKey(event.getSubject())) {
           cache.get(event.getSubject()).add(event.getSessionId());
         }
@@ -104,7 +112,7 @@ public class ClientQueueListener {
     messageBus.addUnsubscribeListener(new UnsubscribeListener() {
       @Override
       public void onUnsubscribe(SubscriptionEvent event) {
-        logger.warn("\nUnsubscriptionEvent " + event.getSubject() + " " + event.getSessionId());
+        logger.debug("UnsubscriptionEvent " + event.getSubject() + " " + event.getSessionId());
         if (cache.containsKey(event.getSubject())) {
           if (cache.get(event.getSubject()).remove(event.getSessionId()))
             ;

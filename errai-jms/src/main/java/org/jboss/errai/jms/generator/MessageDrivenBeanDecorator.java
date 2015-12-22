@@ -13,6 +13,13 @@ import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
 import org.jboss.errai.jms.client.local.MessageDrivenBeanReceiver;
 
+/**
+ * Main generator, response for client and server bean generation.
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
+
 @CodeDecorator
 public class MessageDrivenBeanDecorator extends
         IOCDecoratorExtension<MessageDriven> {
@@ -32,6 +39,13 @@ public class MessageDrivenBeanDecorator extends
     }
   }
 
+  /**
+   *  Construct server and client MDBeans
+   * 
+   * @param decorable
+   * @param controller
+   * @param config
+   */
   private void generate(Decorable decorable, FactoryController controller,
           MessageDrivenBeanConfiguration config) {
     try {
@@ -42,6 +56,15 @@ public class MessageDrivenBeanDecorator extends
     }
   }
 
+  
+  /**
+   * Creates and configure an instance of MessageDrivenBeanReceiver to became a bridge
+   * between server MDBean and client MDBean.
+   * 
+   * @param decorable
+   * @param controller
+   * @param config current MDBean configuration
+   */
   private void generateClientSideCode(Decorable decorable,
           FactoryController controller, MessageDrivenBeanConfiguration config) {
 
@@ -72,6 +95,9 @@ public class MessageDrivenBeanDecorator extends
                     "registerOneTimeInitCallback", callbackStmt)));
   }
 
+  /* 
+   * Generate server side MDBean
+   */
   private void generateServerSideCode(Decorable decorable,
           MessageDrivenBeanConfiguration config) {
     new MessageDrivenBeanReceiverGenerator(decorable, config);

@@ -1,7 +1,5 @@
 package org.jboss.errai.jms.server.impl;
 
-import java.util.Map.Entry;
-
 import javax.ejb.Asynchronous;
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -20,12 +18,20 @@ import org.jboss.errai.jms.server.ClientReceiver;
 import org.jboss.errai.jms.server.QueueDeliveryWatcher;
 import org.jboss.errai.jms.util.ErraiJMSMDBUtil;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 @Stateless
 @Named("Queue")
-public class ClientReceiverQueueImpl extends ClientReceiver {
-  private static final Logger logger = LoggerFactory.getLogger(ClientReceiverQueueImpl.class);
+public class ClientReceiverQueueImpl implements ClientReceiver {
+  
+  @Inject
+  private Logger logger;
+  
+ // private static final Logger logger = Logger.getLogger(ClientReceiverQueueImpl.class);
 
   @Inject
   private ClientQueueListener clientCache;
@@ -40,12 +46,7 @@ public class ClientReceiverQueueImpl extends ClientReceiver {
 
   @Override
   public void processToMessageBus(Message message) throws JMSException {
-
     String sessionId = clientCache.next(((Queue) message.getJMSDestination()).getQueueName());
-
-    logger.debug("processToMessageBus " + ((Queue) message.getJMSDestination()).getQueueName() + " >" + sessionId + "< "
-            + ((Queue) message.getJMSDestination()).getQueueName());
-
     if (!sessionId.equals("")) {
       MessageBuildCommand<MessageBuildSendableWithReply> messageBuildCommand = ErraiJMSMDBUtil
               .toMessageBusMessage(message);
@@ -74,7 +75,7 @@ public class ClientReceiverQueueImpl extends ClientReceiver {
       @Override
       public void callback(org.jboss.errai.bus.client.api.messaging.Message message) {
         String result = message.get(String.class, "result");
-        logger.info(" delivered: " + result + " messageId:" + message.get(String.class, "JMSID"));
+        logger.debug(" delivered: " + result + " messageId:" + message.get(String.class, "JMSID"));
         if (result.equals("success")) {
           queueDeliveryWatcher.messageDelivered(message);
         }
@@ -87,7 +88,7 @@ public class ClientReceiverQueueImpl extends ClientReceiver {
 
   private void onError(org.jboss.errai.bus.client.api.messaging.Message message) {
     String sessionId = clientCache.next(message.getSubject());
-    logger.info("resend message to another consumer because of Exception: sessionId : " + sessionId + ", destination :"
+    logger.debug("resend message to another consumer because of Exception: sessionId : " + sessionId + ", destination :"
             + message.getSubject());
     message.getParts().put("SessionID", sessionId);
     message.sendNowWith(messageBus);

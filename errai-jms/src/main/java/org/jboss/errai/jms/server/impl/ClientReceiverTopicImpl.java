@@ -9,12 +9,17 @@ import javax.jms.Message;
 import org.jboss.errai.bus.client.api.messaging.MessageBus;
 import org.jboss.errai.jms.server.ClientReceiver;
 import org.jboss.errai.jms.util.ErraiJMSMDBUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+/**
+ * Send message to Errai Bus
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
 
 @Stateless
 @Named("Topic")
-public class ClientReceiverTopicImpl extends ClientReceiver {
+public class ClientReceiverTopicImpl implements ClientReceiver {
 
   @Inject
   private MessageBus messageBus;
@@ -23,6 +28,10 @@ public class ClientReceiverTopicImpl extends ClientReceiver {
 
   }
 
+  /**
+   * Send message to Errai Bus
+   * 
+   */ 
   @Override
   public void processToMessageBus(Message message) throws JMSException {
     ErraiJMSMDBUtil.toMessageBusMessage(message).getMessage().sendNowWith(messageBus);

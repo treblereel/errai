@@ -6,6 +6,13 @@ import javax.ejb.MessageDriven;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
 
+/**
+ * MDB configuration holder.
+ * 
+ * @author Dmitrii Tikhomirov
+ *
+ */
+
 public class MessageDrivenBeanConfiguration {
 	private String acknowledgeMode;
 	private String className;
@@ -82,10 +89,10 @@ public class MessageDrivenBeanConfiguration {
 	}
 
 	/**
-	 * Because there are could be several bean with the same name,
+	 * Because there are could be several beans with the same name,
 	 * we will add a random string to the generated bean name
 	 * 
-	 * @param className
+	 * @param className of server side MDBean
 	 */
 	public void setClassName(String className) {
 		this.className = className+RandomStringUtils.randomAlphabetic(LENGHT_RANDOM_STRING);
