@@ -1,11 +1,11 @@
 /*
- * Copyright 2013 JBoss, by Red Hat, Inc
+ * Copyright (C) 2013 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,11 +26,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.errai.common.rebind.CacheStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Mike Brock
  */
 public class MetaClassCache implements CacheStore {
+  private static final Logger logger = LoggerFactory.getLogger(MetaClassCache.class);
+
   private final Map<String, CacheEntry> PRIMARY_CLASS_CACHE
       = new ConcurrentHashMap<String, CacheEntry>(2000);
 
@@ -61,6 +65,7 @@ public class MetaClassCache implements CacheStore {
   }
 
   public void updateCache(Map<String, MetaClass> mapToPush) {
+    logger.debug("updateCache called for " + mapToPush.size() + " MetaClasses.");
     addNewOrUpdatedToInvalidated(mapToPush);
     addRemoved();
   }
@@ -77,10 +82,12 @@ public class MetaClassCache implements CacheStore {
 
   private void addNewOrUpdatedToInvalidated(Map<String, MetaClass> mapToPush) {
     for (final Entry<String, MetaClass> entry : mapToPush.entrySet()) {
+      logger.trace("Creating new " + entry.getValue().getClass().getSimpleName() + " cache entry for " + entry.getKey());
       final CacheEntry newCacheEntry = createCacheEntry(entry.getValue());
       PRIMARY_CLASS_CACHE.put(entry.getKey(), newCacheEntry);
       final CacheEntry previousCacheEntry = backupClassCache.get(entry.getKey());
       if (previousCacheEntry == null || previousCacheEntry.hashCode != newCacheEntry.hashCode) {
+        logger.trace("Old cache entry replaced for " + entry.getKey());
         invalidated.add(entry.getKey());
 
         if (previousCacheEntry == null) {
@@ -95,6 +102,7 @@ public class MetaClassCache implements CacheStore {
   }
 
   public void pushCache(final String fqcn, final MetaClass clazz) {
+    logger.trace("Creating new " + clazz.getClass().getSimpleName() + " cache entry for " + fqcn);
     if (!PRIMARY_CLASS_CACHE.containsKey(fqcn)) {
       PRIMARY_CLASS_CACHE.put(fqcn, new CacheEntry(clazz, CacheEntry.PLACE_HOLDER));
       if (!backupClassCache.containsKey(clazz.getFullyQualifiedName())) {
@@ -108,6 +116,7 @@ public class MetaClassCache implements CacheStore {
   }
 
   public void pushToPermanentCache(final String fullyQualifiedName, final MetaClass clazz) {
+    logger.trace("Creating new permanent " + clazz.getClass().getSimpleName() + " cache entry for " + fullyQualifiedName);
     pushCache(fullyQualifiedName, clazz);
     PERMANENT_CLASS_CACHE.put(fullyQualifiedName, PRIMARY_CLASS_CACHE.get(fullyQualifiedName));
   }
@@ -153,6 +162,7 @@ public class MetaClassCache implements CacheStore {
   }
 
   public void pushErasedCache(final String fqcn, final MetaClass clazz) {
+    logger.trace("Creating new " + clazz.getClass().getSimpleName() + " cache entry for " + fqcn);
     ERASED_CLASS_CACHE.put(fqcn, clazz);
   }
 

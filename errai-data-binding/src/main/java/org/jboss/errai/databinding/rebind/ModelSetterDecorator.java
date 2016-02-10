@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.databinding.rebind;
 
 import static org.jboss.errai.codegen.util.Stmt.loadStatic;
@@ -10,7 +26,7 @@ import org.jboss.errai.codegen.exception.GenerationException;
 import org.jboss.errai.codegen.meta.MetaClass;
 import org.jboss.errai.codegen.util.Refs;
 import org.jboss.errai.databinding.client.api.DataBinder;
-import org.jboss.errai.databinding.client.api.InitialState;
+import org.jboss.errai.databinding.client.api.StateSync;
 import org.jboss.errai.ioc.client.api.CodeDecorator;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCDecoratorExtension;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
@@ -25,7 +41,7 @@ import org.jboss.errai.ui.shared.api.annotations.ModelSetter;
  * @author Mike Brock
  * @author Christian Sadilek <csadilek@redhat.com>
  */
-@CodeDecorator
+@CodeDecorator(order = 2)
 public class ModelSetterDecorator extends IOCDecoratorExtension<ModelSetter> {
 
   public ModelSetterDecorator(Class<ModelSetter> decoratesWith) {
@@ -50,7 +66,7 @@ public class ModelSetterDecorator extends IOCDecoratorExtension<ModelSetter> {
     final String modelParamName = decorable.getAsMethod().getParameters()[0].getName();
     controller.addInvokeBefore(decorable.getAsMethod(),
           nestedCall(proxyProperty)
-              .invoke("setModel", Refs.get(modelParamName), loadStatic(InitialState.class, "FROM_MODEL")));
+              .invoke("setModel", Refs.get(modelParamName), loadStatic(StateSync.class, "FROM_MODEL")));
 
     controller.addInvokeBefore(
           decorable.getAsMethod(),

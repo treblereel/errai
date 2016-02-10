@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.ui.test.binding.client;
 
 import javax.annotation.PostConstruct;
@@ -7,9 +23,12 @@ import org.jboss.errai.ioc.client.api.EntryPoint;
 import org.jboss.errai.ui.client.widget.ListWidget;
 import org.jboss.errai.ui.client.widget.Table;
 import org.jboss.errai.ui.client.widget.UnOrderedList;
+import org.jboss.errai.ui.shared.TemplateUtil;
 import org.jboss.errai.ui.test.binding.client.res.BindingItemWidget;
-import org.jboss.errai.ui.test.binding.client.res.BindingListWidget;
 import org.jboss.errai.ui.test.binding.client.res.BindingTemplate;
+import org.jboss.errai.ui.test.binding.client.res.CompositeBindingTemplate;
+import org.jboss.errai.ui.test.binding.client.res.NonCompositeBindingItem;
+import org.jboss.errai.ui.test.binding.client.res.NonCompositeBindingTemplate;
 import org.jboss.errai.ui.test.common.client.TestModel;
 
 import com.google.gwt.user.client.ui.RootPanel;
@@ -21,8 +40,11 @@ public class BindingTemplateTestApp {
   private RootPanel root;
 
   @Inject
-  private BindingTemplate template;
-   
+  private CompositeBindingTemplate compositeTemplate;
+
+  @Inject
+  private NonCompositeBindingTemplate nonCompositeTemplate;
+
   @Inject
   @UnOrderedList
   private ListWidget<TestModel, BindingItemWidget> ulListWidget;
@@ -33,15 +55,16 @@ public class BindingTemplateTestApp {
 
   @PostConstruct
   public void setup() {
-    root.add(template);
+    root.add(compositeTemplate);
+    root.getElement().appendChild(TemplateUtil.asElement(nonCompositeTemplate.getRoot()));
   }
 
-  public BindingTemplate getTemplate() {
-    return template;
+  public BindingTemplate<BindingItemWidget> getCompositeTemplate() {
+    return compositeTemplate;
   }
-  
-  public BindingListWidget getListWidget() {
-    return template.getListWidget();
+
+  public BindingTemplate<NonCompositeBindingItem> getNonCompositeTemplate() {
+    return nonCompositeTemplate;
   }
 
   public ListWidget<TestModel, BindingItemWidget> getUlListWidget() {

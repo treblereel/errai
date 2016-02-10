@@ -1,11 +1,11 @@
 /*
- * Copyright 2015 JBoss, by Red Hat, Inc
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,6 +28,7 @@ import org.jboss.errai.codegen.meta.MetaParameter;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCExtensionConfigurator;
 import org.jboss.errai.ioc.rebind.ioc.extension.builtin.LoggerFactoryIOCExtension;
 import org.jboss.errai.ioc.rebind.ioc.graph.impl.ResolutionPriority;
+import org.jboss.errai.ioc.rebind.ioc.injector.api.InjectableProvider;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.WiringElementType;
 
 /**
@@ -93,7 +94,7 @@ public interface DependencyGraphBuilder {
    *
    * @return The newly added extension {@link Injectable}.
    */
-  Injectable addExtensionInjectable(MetaClass injectedType, Qualifier qualifier, Class<? extends Annotation> literalScope, WiringElementType... wiringTypes);
+  Injectable addExtensionInjectable(MetaClass injectedType, Qualifier qualifier, InjectableProvider provider, WiringElementType... wiringTypes);
 
   /**
    * Create a dependency for a field injection point in a bean class.
@@ -134,6 +135,15 @@ public interface DependencyGraphBuilder {
    * @param dependentField The producer member (field or method) that must be invoked to satisfy the dependency.
    */
   void addProducerMemberDependency(Injectable injectable, MetaClass type, Qualifier qualifier, MetaClassMember producingMember);
+
+  /**
+   * Create a dependency for a static producer member (field or method) injection point in a bean class.
+   *
+   * @param injectable The {@link Injectable} that has the dependency.
+   * @param type The class of the dependency.
+   * @param dependentField The producer member (field or method) that must be invoked to satisfy the dependency.
+   */
+  void addProducerMemberDependency(Injectable producedInjectable, MetaClass producerType, MetaClassMember method);
 
   /**
    * Create a dependency for a setter method injection point in a bean class.
@@ -199,7 +209,7 @@ public interface DependencyGraphBuilder {
    * @author Max Barkley <mbarkley@redhat.com>
    */
   public static enum InjectableType {
-    Type, JsType, Producer, Provider, ContextualProvider, Abstract, Extension, ExtensionProvided
+    Type, JsType, Producer, Provider, ContextualProvider, Abstract, Extension, ExtensionProvided, Static
   }
 
   /**

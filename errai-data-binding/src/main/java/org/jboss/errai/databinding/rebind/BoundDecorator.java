@@ -1,11 +1,11 @@
 /*
- * Copyright 2013 JBoss, by Red Hat, Inc
+ * Copyright (C) 2013 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -59,7 +59,8 @@ import jsinterop.annotations.JsType;
  *
  * @author Christian Sadilek <csadilek@redhat.com>
  */
-@CodeDecorator
+// Must run after TemplatedCodeDecorator
+@CodeDecorator(order=2)
 public class BoundDecorator extends IOCDecoratorExtension<Bound> {
 
   final Set<MetaClass> processedTypes = Collections.newSetFromMap(new ConcurrentHashMap<MetaClass, Boolean>());
@@ -126,7 +127,6 @@ public class BoundDecorator extends IOCDecoratorExtension<Bound> {
             + componentType.getFullyQualifiedName());
       }
 
-
       // Generate the binding
       Statement conv = bound.converter().equals(Bound.NO_CONVERTER.class) ? loadLiteral(null) : Stmt.newObject(bound.converter());
       Statement onKeyUp = Stmt.load(bound.onKeyUp());
@@ -143,7 +143,7 @@ public class BoundDecorator extends IOCDecoratorExtension<Bound> {
     controller.addInitializationStatements(statements);
     if (!hasRunForType) {
       controller.addDestructionStatements(Collections.<Statement> singletonList(
-              nestedCall(Stmt.castTo(DataBinder.class, binderLookup.getValueAccessor())).invoke("unbind")));
+              nestedCall(controller.getReferenceStmt(DataBindingUtil.BINDER_VAR_NAME, DataBinder.class)).invoke("unbind")));
     }
   }
 

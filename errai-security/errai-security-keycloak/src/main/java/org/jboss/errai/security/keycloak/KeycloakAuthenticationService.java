@@ -1,19 +1,19 @@
-/**
- * JBoss, Home of Professional Open Source
- * Copyright 2014, Red Hat, Inc. and/or its affiliates, and individual
- * contributors by the @authors tag. See the copyright.txt in the
- * distribution for a full listing of individual contributors.
+/*
+ * Copyright (C) 2014 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.security.keycloak;
 
 import static org.jboss.errai.security.keycloak.properties.KeycloakPropertyNames.AUDIENCE;
@@ -42,6 +42,7 @@ import static org.jboss.errai.security.keycloak.properties.KeycloakPropertyNames
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -200,7 +201,6 @@ public class KeycloakAuthenticationService implements AuthenticationService, Ser
     properties.add(new KeycloakProperty(StandardUserProperties.FIRST_NAME, accessToken.getGivenName()));
     properties.add(new KeycloakProperty(StandardUserProperties.LAST_NAME, accessToken.getFamilyName()));
     properties.add(new KeycloakProperty(StandardUserProperties.EMAIL, accessToken.getEmail()));
-    properties.add(new KeycloakProperty(AUDIENCE, accessToken.getAudience()));
     properties.add(new KeycloakProperty(BIRTHDATE, accessToken.getBirthdate()));
     properties.add(new KeycloakProperty(GENDER, accessToken.getGender()));
     properties.add(new KeycloakProperty(LOCALE, accessToken.getLocale()));
@@ -231,7 +231,20 @@ public class KeycloakAuthenticationService implements AuthenticationService, Ser
   }
 
   private Collection<? extends Role> createRoles(final AccessToken accessToken) {
-    Set<String> roleNames = accessToken.getResourceAccess(accessToken.getIssuedFor()).getRoles();
+    Set<String> roleNames = new HashSet<String>();
+    
+    //Add app roles first, if any
+    AccessToken.Access access = accessToken.getResourceAccess(accessToken.getIssuedFor());
+    if(access != null && access.getRoles() != null){
+      roleNames.addAll(access.getRoles());
+    }
+
+    //Add realm roles next, if any
+    AccessToken.Access realmAccess = accessToken.getRealmAccess();
+    if(realmAccess != null && realmAccess.getRoles() != null){
+      roleNames.addAll(realmAccess.getRoles());
+    }
+
     final List<Role> roles = new ArrayList<Role>(roleNames.size());
     for (final String roleName : roleNames) {
       roles.add(new RoleImpl(roleName));

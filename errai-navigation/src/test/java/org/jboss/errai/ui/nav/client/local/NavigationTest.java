@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.ui.nav.client.local;
 
 import java.util.Collection;
@@ -17,13 +33,16 @@ import org.jboss.errai.ui.nav.client.local.testpages.CircularRef1;
 import org.jboss.errai.ui.nav.client.local.testpages.CircularRef2;
 import org.jboss.errai.ui.nav.client.local.testpages.MissingPageRole;
 import org.jboss.errai.ui.nav.client.local.testpages.MissingUniquePageRole;
+import org.jboss.errai.ui.nav.client.local.testpages.NonCompositePage;
 import org.jboss.errai.ui.nav.client.local.testpages.PageA;
+import org.jboss.errai.ui.nav.client.local.testpages.PageB;
 import org.jboss.errai.ui.nav.client.local.testpages.PageBWithState;
 import org.jboss.errai.ui.nav.client.local.testpages.PageIsWidget;
 import org.jboss.errai.ui.nav.client.local.testpages.PageWithExtraState;
 import org.jboss.errai.ui.nav.client.local.testpages.PageWithLinkToIsWidget;
 import org.jboss.errai.ui.nav.client.local.testpages.PageWithNavigationControl;
 import org.jboss.errai.ui.nav.client.local.testpages.PageWithRole;
+import org.jboss.errai.ui.nav.client.local.testpages.PageWithTransitionToNonComposite;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMultimap;
@@ -34,7 +53,6 @@ import com.google.gwt.event.logical.shared.ValueChangeHandler;
 import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
-import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
 import com.google.web.bindery.event.shared.HandlerRegistration;
@@ -69,6 +87,22 @@ public class NavigationTest extends AbstractErraiCDITest {
   protected void gwtTearDown() throws Exception {
     navigation.cleanUp();
     super.gwtTearDown();
+  }
+
+  public void testNavigationToNonCompositePage() throws Exception {
+    navigation.goTo(NonCompositePage.class.getSimpleName());
+    assertEquals("Did not navigate to non composite page.", NonCompositePage.class, navigation.currentPage.contentType());
+  }
+
+  public void testNavigationFromNonCompositePage() throws Exception {
+    try {
+      testNavigationToNonCompositePage();
+    } catch (AssertionError ae) {
+      throw new AssertionError("Precondition failed: Could not navigate to non-composite page.", ae);
+    }
+
+    navigation.goTo(PageB.class, ImmutableMultimap.<String, String>of());
+    assertEquals("Did not navigate to PageB from composite.", PageB.class, navigation.currentPage.contentType());
   }
 
   public void testMissingPage() throws Exception {
@@ -178,7 +212,7 @@ public class NavigationTest extends AbstractErraiCDITest {
   }
 
   public void testGetMissingPageByRole() throws Exception {
-    final Collection<PageNode<? extends IsWidget>> pagesByRole = navGraph.getPagesByRole(MissingPageRole.class);
+    final Collection<PageNode<?>> pagesByRole = navGraph.getPagesByRole(MissingPageRole.class);
 
     assertNotNull(pagesByRole);
     assertTrue(pagesByRole.isEmpty());
@@ -235,6 +269,17 @@ public class NavigationTest extends AbstractErraiCDITest {
 
     delayTestFinish(5000);
     page.getTransitionToIsWidget().go();
+  }
+
+  public void testTransitionToNonCompositePage() throws Exception {
+    final PageWithTransitionToNonComposite pageWithTransition = IOC.getBeanManager().lookupBean(PageWithTransitionToNonComposite.class).getInstance();
+    navigation.goTo("");
+    assertFalse("Precondition failed: Should not start test on " + NonCompositePage.class.getSimpleName(),
+            navigation.currentPage.contentType().equals(NonCompositePage.class));
+    pageWithTransition.transition.go();
+    assertTrue("Should have navigated to " + NonCompositePage.class.getSimpleName(),
+            navigation.currentPage.contentType().equals(NonCompositePage.class));
+
   }
 
   public void testIsWidgetAnchorTransition() {

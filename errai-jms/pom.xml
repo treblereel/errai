@@ -11,6 +11,7 @@
 
 	<artifactId>errai-jms</artifactId>
 	<name>Errai::JMS</name>
+	<packaging>jar</packaging>
 
 	<description>Errai JMS</description>
 	<url>http://www.jboss.org/errai</url>
@@ -22,12 +23,33 @@
 		</license>
 	</licenses>
 
+	<properties>
+		<!-- GWT needs at least java 1.7 -->
+		<maven.compiler.source>1.7</maven.compiler.source>
+		<maven.compiler.target>1.7</maven.compiler.target>
+		<version.wildfly.dist>10.0.0.Final</version.wildfly.dist>
+		<version.org.jboss.arquillian>1.1.11.Final</version.org.jboss.arquillian>
+		<version.org.jboss.arquillian.drone>2.0.0.Alpha5</version.org.jboss.arquillian.drone>
+		<version.org.jboss.arquillian.graphene>2.1.0.Alpha3</version.org.jboss.arquillian.graphene>
+		<version.cglib>3.1</version.cglib>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
 	<dependencyManagement>
 		<dependencies>
+			<!-- Arquillian Core dependencies -->
 			<dependency>
-				<groupId>org.jboss.errai.bom</groupId>
-				<artifactId>errai-bom</artifactId>
-				<version>${project.version}</version>
+				<groupId>org.jboss.arquillian</groupId>
+				<artifactId>arquillian-bom</artifactId>
+				<version>${version.org.jboss.arquillian}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<!-- Arquillian Drone dependencies and WebDriver/Selenium dependencies -->
+			<dependency>
+				<groupId>org.jboss.arquillian.extension</groupId>
+				<artifactId>arquillian-drone-bom</artifactId>
+				<version>${version.org.jboss.arquillian.drone}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -35,7 +57,6 @@
 	</dependencyManagement>
 
 	<dependencies>
-
 		<dependency>
 			<groupId>org.jboss.errai</groupId>
 			<artifactId>errai-config</artifactId>
@@ -91,13 +112,12 @@
 		<dependency>
 			<groupId>cglib</groupId>
 			<artifactId>cglib</artifactId>
-			<version>3.1</version>
+			<version>${version.cglib}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.sun.codemodel</groupId>
 			<artifactId>codemodel</artifactId>
-			<version>2.6</version>
 		</dependency>
 
 		<!-- Must come after errai-common is inherited for patched JUnitShell -->
@@ -117,42 +137,215 @@
 			<scope>provided</scope>
 		</dependency>
 
+		<!-- Tests -->
+		<dependency>
+			<groupId>org.jboss.shrinkwrap.resolver</groupId>
+			<artifactId>shrinkwrap-resolver-api-maven</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jboss.arquillian.junit</groupId>
+			<artifactId>arquillian-junit-container</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jboss.arquillian.graphene</groupId>
+			<artifactId>graphene-webdriver</artifactId>
+			<version>${version.org.jboss.arquillian.graphene}</version>
+			<type>pom</type>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jboss.arquillian.extension</groupId>
+			<artifactId>arquillian-drone-webdriver-depchain</artifactId>
+			<type>pom</type>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
-		<resources>
-			<resource>
-				<directory>src/main/java</directory>
-			</resource>
-			<resource>
-				<directory>src/main/resources</directory>
-			</resource>
-		</resources>
-		<testResources>
-			<testResource>
-				<directory>src/test/java</directory>
-			</testResource>
-			<testResource>
-				<directory>src/test/resources</directory>
-			</testResource>
-		</testResources>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<skip>true</skip>
+				</configuration>
+				<executions>
+					<execution>
+						<id>unittests</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>test</goal>
+						</goals>
+						<configuration>
+							<skip>false</skip>
+							<includes>
+								<include>**/**/**/*TestCase.java</include>
+							</includes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
 				<executions>
 					<execution>
+						<id>second-jar</id>
 						<goals>
-							<goal>test-jar</goal>
+							<goal>jar</goal>
 						</goals>
 						<configuration>
-							<includes>
-								<include>**/ErraiJMSMDBUtilTest.*</include>
-							</includes>
+							<excludes>
+								<exclude>**/org/jboss/errai/demo/**</exclude>
+							</excludes>
+							<descriptorRefs>
+								<descriptorRef>jar-with-dependencies</descriptorRef>
+							</descriptorRefs>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>integration_test</id>
+			<dependencies>
+				<dependency>
+					<groupId>org.jboss.spec</groupId>
+					<artifactId>jboss-javaee-web-6.0</artifactId>
+					<version>2.0.0.Final</version>
+					<type>pom</type>
+					<scope>provided</scope>
+					<exclusions>
+						<exclusion>
+							<groupId>org.apache.xalan</groupId>
+							<artifactId>xalan</artifactId>
+						</exclusion>
+					</exclusions>
+				</dependency>
+				<dependency>
+					<groupId>org.wildfly</groupId>
+					<artifactId>wildfly-arquillian-container-managed</artifactId>
+					<version>8.2.1.Final</version>
+					<scope>test</scope>
+				</dependency>
+
+				<dependency>
+					<groupId>org.jboss.arquillian.protocol</groupId>
+					<artifactId>arquillian-protocol-servlet</artifactId>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
+			<build>
+				<plugins>
+				<!--  	<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-jar-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>second-jar</id>
+								<goals>
+									<goal>package</goal>
+								</goals>
+								<configuration>
+									<excludes>
+										<exclude>**/org/jboss/errai/demo/**</exclude>
+									</excludes>
+									<descriptorRefs>
+										<descriptorRef>jar-with-dependencies</descriptorRef>
+									</descriptorRefs>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin> -->
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>gwt-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<goals>
+									<goal>compile</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<runTarget>App.html</runTarget>
+							<sourceLevel>${maven.compiler.source}</sourceLevel>
+							<modules>
+								<module>org.jboss.errai.demo.jms.ErraiJmsDemo</module>
+							</modules>
+						</configuration>
+					</plugin>
+					<plugin>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<skipTests>false</skipTests>
+							<includes>
+								<include>**/**/**/*TestCase.java</include>
+							</includes>
+							<additionalClasspathElements>
+								<additionalClasspathElement>${basedir}/target/test-classes</additionalClasspathElement>
+								<additionalClasspathElement>${basedir}/target/classes</additionalClasspathElement>
+								<additionalClasspathElement>${basedir}/src/main/java</additionalClasspathElement>
+								<additionalClasspathElement>${basedir}/src/test/java</additionalClasspathElement>
+							</additionalClasspathElements>
+						</configuration>
+						<executions>
+							<execution>
+								<id>unittests</id>
+								<phase>package</phase>
+								<goals>
+									<goal>test</goal>
+								</goals>
+								<configuration>
+									<skip>false</skip>
+									<includes>
+										<include>**/**/**/*TestCase.java</include>
+									</includes>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<artifactId>maven-dependency-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>unpack</id>
+								<phase>process-test-classes</phase>
+								<goals>
+									<goal>unpack</goal>
+								</goals>
+								<configuration>
+									<artifactItems>
+										<artifactItem>
+											<groupId>org.wildfly</groupId>
+											<artifactId>wildfly-dist</artifactId>
+											<version>${version.wildfly.dist}</version>
+											<type>zip</type>
+											<overWrite>false</overWrite>
+											<outputDirectory>target</outputDirectory>
+										</artifactItem>
+									</artifactItems>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

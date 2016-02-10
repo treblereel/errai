@@ -1,11 +1,11 @@
 /*
- * Copyright 2013 JBoss, by Red Hat, Inc
+ * Copyright (C) 2013 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.errai.codegen.meta.MetaClassFactory;
 import org.jboss.errai.ui.client.local.spi.TranslationService;
 import org.jboss.errai.ui.rebind.TranslationServiceGenerator;
-import org.jboss.errai.ui.test.i18n.client.res.I18nComponent;
+import org.jboss.errai.ui.test.i18n.client.res.CompositeI18nComponent;
 import org.jboss.errai.ui.test.i18n.client.res.I18nNestedComponent;
 import org.jboss.errai.ui.test.i18n.client.res.I18nNotRootTemplatedWidget;
 import org.junit.Test;
@@ -42,9 +42,9 @@ public class I18nBundleTest {
   @Test
   public void testAllBundleFileContainsAllKeys() throws Exception {
 
-    MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(I18nComponent.class));
+    MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(CompositeI18nComponent.class));
     MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(I18nNestedComponent.class));
-    MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(I18nTemplateTestApp.class));
+    MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(CompositeI18nTemplateTestApp.class));
     MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(TranslationService.class));
 
     new TranslationServiceGenerator().generate(null, null);
@@ -80,7 +80,7 @@ public class I18nBundleTest {
   public void testAllBundleFileOnlyContainsNestedTemplateKeys() throws Exception {
 
     MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(I18nNotRootTemplatedWidget.class));
-    MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(I18nTemplateTestApp.class));
+    MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(CompositeI18nTemplateTestApp.class));
     MetaClassFactory.getMetaClassCache().pushCache(MetaClassFactory.get(TranslationService.class));
 
     new TranslationServiceGenerator().generate(null, null);

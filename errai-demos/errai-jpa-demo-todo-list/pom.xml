@@ -53,14 +53,12 @@
     <jetty.version>6.1.25</jetty.version>    
     <maven.clean.plugin.version>2.4.1</maven.clean.plugin.version>
     <wildfly.plugin.version>1.0.1.Final</wildfly.plugin.version>
-    <maven.compiler.target>1.6</maven.compiler.target>    
     <picketlink.version>2.6.0.Final</picketlink.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.war.plugin.version>2.1.1</maven.war.plugin.version>
     <maven.gwt.plugin.version>2.8.0-SNAPSHOT</maven.gwt.plugin.version>
     <skipTests>true</skipTests>
     <maven.deploy.plugin.version>2.7</maven.deploy.plugin.version>
-    <maven.compiler.source>1.7</maven.compiler.source>
     <argLine></argLine>
     <!-- Set this property to the full path to your Wildfly installation to run DevMode -->
     <errai.jboss.home></errai.jboss.home>
@@ -74,11 +72,51 @@
       <url>https://repository.jboss.org/nexus/content/groups/public</url>
     </repository>
     <repository>
-      <id>central</id>
-      <name>Sonatype Repo</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <id>google-snapshots</id>
+      <name>Google Snapshots Repo</name>
+      <url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>sonatype-public</id>
+      <name>Sonatype Public Snapshots Repo</name>
+      <url>https://oss.sonatype.org/content/repositories/public</url>
     </repository>
   </repositories>
+
+  <!-- This must be here for gwt-maven-plugin 2.8.0-SNAPSHOT -->
+  <pluginRepositories>
+    <pluginRepository>
+      <id>public-snapshots-repo</id>
+      <url>https://oss.sonatype.org/content/repositories/public/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>google-snapshots-repo</id>
+      <url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>jboss</id>
+      <name>JBoss Public Repo</name>
+      <url>https://repository.jboss.org/nexus/content/groups/public</url>
+    </pluginRepository>
+  </pluginRepositories>
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -106,13 +144,6 @@
     <dependency>
       <groupId>com.google.gwt</groupId>
       <artifactId>gwt-user</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- With gwt-maven-plugin:2.8.0-SNAPSHOT compilation fails without this dependency. -->
-    <dependency>
-      <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-dev</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -328,8 +359,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>2.3.2</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
       <plugin>
@@ -361,8 +392,21 @@
           <runTarget>${errai.dev.context}/</runTarget>
           <soyc>false</soyc>
           <hostedWebapp>src/main/webapp</hostedWebapp>
-          <extraJvmArgs>-Xmx712m -XX:CompileThreshold=7000 -XX:MaxPermSize=128M -Derrai.jboss.javaopts=-XX:MaxPermSize=256m -Derrai.jboss.config.file=standalone.xml -Derrai.jboss.home=${errai.jboss.home} -Derrai.dev.context=${errai.dev.context} -Derrai.jboss.javaagent.path=${settings.localRepository}/org/jboss/errai/errai-client-local-class-hider/${project.version}/errai-client-local-class-hider-${project.version}.jar</extraJvmArgs>
+          <extraJvmArgs>-Xmx712m -XX:CompileThreshold=7000 -Derrai.jboss.config.file=standalone.xml -Derrai.jboss.home=${errai.jboss.home} -Derrai.dev.context=${errai.dev.context} -Derrai.jboss.javaagent.path=${settings.localRepository}/org/jboss/errai/errai-client-local-class-hider/${project.version}/errai-client-local-class-hider-${project.version}.jar</extraJvmArgs>
         </configuration>
+        <!-- TODO Remove this once a gwt-maven-plugin version is released supporting GWT 2.8 -->
+        <dependencies>
+          <dependency>
+            <groupId>com.google.gwt</groupId>
+            <artifactId>gwt-user</artifactId>
+            <version>2.8.0-beta1</version>
+          </dependency>
+          <dependency>
+            <groupId>com.google.gwt</groupId>
+            <artifactId>gwt-dev</artifactId>
+            <version>2.8.0-beta1</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>

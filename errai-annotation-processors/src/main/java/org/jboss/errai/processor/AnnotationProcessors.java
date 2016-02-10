@@ -1,5 +1,22 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.processor;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -10,6 +27,8 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.Elements;
 
@@ -18,7 +37,7 @@ import javax.lang.model.util.Elements;
  * missing functionality in the Java 6 Annotation Processing API.
  * <p>
  * Do your worst! :-)
- * 
+ *
  * @author jfuerth
  */
 public class AnnotationProcessors {
@@ -32,7 +51,11 @@ public class AnnotationProcessors {
   }
 
   public static AnnotationMirror getAnnotation(Element target, CharSequence annotationQualifiedName) {
-    for (AnnotationMirror am : target.getAnnotationMirrors()) {
+    return getAnnotation(target.getAnnotationMirrors(), annotationQualifiedName);
+  }
+
+  public static AnnotationMirror getAnnotation(List<? extends AnnotationMirror> annotationMirrors, CharSequence annotationQualifiedName) {
+    for (AnnotationMirror am : annotationMirrors) {
       Name annotationClassName = ((TypeElement) am.getAnnotationType().asElement()).getQualifiedName();
       if (annotationClassName.contentEquals(annotationQualifiedName)) {
         return am;
@@ -44,7 +67,7 @@ public class AnnotationProcessors {
   /**
    * Retrieves a parameter value from an annotation that targets the given
    * element. The returned value does not take defaults into consideration.
-   * 
+   *
    * @param target
    *          The element targeted by an instance of the given annotation. Could
    *          be a class, field, method, or anything else.
@@ -71,7 +94,7 @@ public class AnnotationProcessors {
 
   /**
    * Retrieves a string parameter value from an annotation.
-   * 
+   *
    * @param elements
    *          Reference to the element utilities see
    *          {@link ProcessingEnvironment#getElementUtils()}.
@@ -93,7 +116,7 @@ public class AnnotationProcessors {
     return null;
   }
 
-  private static AnnotationValue extractAnnotationPropertyValue(Elements elementUtils, AnnotationMirror annotation,
+  public static AnnotationValue extractAnnotationPropertyValue(Elements elementUtils, AnnotationMirror annotation,
           CharSequence annotationProperty) {
 
     Map<? extends ExecutableElement, ? extends AnnotationValue> annotationParams = elementUtils
@@ -137,7 +160,7 @@ public class AnnotationProcessors {
    * it does in fact define a property name. The name is calculated by stripping
    * off the prefix "is", "get", or "set" and then converting the new initial
    * character to lowercase.
-   * 
+   *
    * @param el
    *          The method element to extract a property name from.
    * @return the property name defined by the method according to JavaBeans
@@ -166,5 +189,12 @@ public class AnnotationProcessors {
       propertyName = sb.toString();
     }
     return propertyName;
+  }
+
+  public static boolean isNativeJsType(TypeMirror targetType, Elements elements) {
+    final AnnotationMirror am = getAnnotation(((DeclaredType) targetType).asElement(), TypeNames.JS_TYPE);
+    final AnnotationValue isNativeValue = (am != null ? extractAnnotationPropertyValue(elements, am, "isNative") : null);
+  
+    return isNativeValue != null && (Boolean) isNativeValue.getValue();
   }
 }

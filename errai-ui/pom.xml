@@ -109,7 +109,16 @@
           <groupId>org.apache.felix</groupId>
           <artifactId>org.apache.felix.scr.annotations</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging-api</artifactId>
+        </exclusion>
       </exclusions>
+    </dependency>
+    <!-- Replacement for commons-logging-api excluded from the above org.apache.stanbol.enhancer.engines.htmlextractor -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
     </dependency>
 
     <dependency>
@@ -182,7 +191,7 @@
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
               <forkMode>always</forkMode>
-              <argLine>-Xmx1500m -XX:MaxPermSize=256m ${argLine} -Dgwt.args='-prod'</argLine>
+              <argLine>-Xmx1500m ${argLine} -Dgwt.args='-prod'</argLine>
 
               <additionalClasspathElements>
                 <additionalClasspathElement>${basedir}/target/classes/</additionalClasspathElement>

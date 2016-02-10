@@ -1,11 +1,11 @@
 /*
- * Copyright 2012 JBoss, by Red Hat, Inc
+ * Copyright (C) 2012 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,7 +34,7 @@ public class ManagementConsole {
   private final ClientMessageBusImpl clientMessageBus;
   private BusErrorDialog errorDialog;
   private final Logger logger = LoggerFactory.getLogger(ManagementConsole.class);
-  
+
   private static final String SEP = "-------------------------------------------------------------------";
 
   public ManagementConsole(final ClientMessageBusImpl clientMessageBus) {
@@ -46,14 +46,14 @@ public class ManagementConsole {
     ErraiConsoleLogHandler eclh = new ErraiConsoleLogHandler(esf);
     logger.addHandler(eclh);
     logger.setUseParentHandlers(false);
-    
+
     declareDebugFunction();
   }
 
   public void displayError(final String message, final String additionalDetails, final Throwable e) {
     errorDialog.addError(message, additionalDetails, e);
 
-    logger.error(message);
+    logger.error(message, e);
     logger.debug(additionalDetails, e);
   }
 
@@ -183,7 +183,7 @@ public class ManagementConsole {
   private void startBus() {
     clientMessageBus.init();
   }
-  
+
   private void displayUtilityTitle(final String title) {
     logger.info(title);
     logger.info(SEP);

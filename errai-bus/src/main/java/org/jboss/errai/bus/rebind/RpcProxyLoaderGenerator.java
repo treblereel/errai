@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 
 package org.jboss.errai.bus.rebind;
 
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 
 import org.jboss.errai.bus.client.api.messaging.MessageBus;
@@ -48,7 +49,7 @@ import com.google.gwt.core.ext.UnableToCompleteException;
 
 /**
  * Generates the implementation of {@link RpcProxyLoader}.
- * 
+ *
  * @author Christian Sadilek <csadilek@redhat.com>
  */
 @GenerateAsync(RpcProxyLoader.class)
@@ -67,7 +68,7 @@ public class RpcProxyLoaderGenerator extends AbstractAsyncGenerator {
   @Override
   protected String generate(final TreeLogger logger, final GeneratorContext context) {
     log.info("generating RPC proxy loader class...");
-    
+
     ClassStructureBuilder<?> classBuilder = ClassBuilder.implement(RpcProxyLoader.class);
     final long time = System.currentTimeMillis();
     final MethodBlockBuilder<?> loadProxies =
@@ -76,7 +77,7 @@ public class RpcProxyLoaderGenerator extends AbstractAsyncGenerator {
     final Collection<MetaClass> remotes = ClassScanner.getTypesAnnotatedWith(Remote.class,
         RebindUtils.findTranslatablePackages(context), context);
     addCacheRelevantClasses(remotes);
-    
+
     final InterceptorProvider interceptorProvider = getInterceptorProvider(context);
 
     for (final MetaClass remote : remotes) {
@@ -109,20 +110,26 @@ public class RpcProxyLoaderGenerator extends AbstractAsyncGenerator {
     final Collection<MetaClass> featureInterceptors = ClassScanner.getTypesAnnotatedWith(FeatureInterceptor.class,
         RebindUtils.findTranslatablePackages(context), context);
     addCacheRelevantClasses(featureInterceptors);
-    
+
     final Collection<MetaClass> standaloneInterceptors = ClassScanner.getTypesAnnotatedWith(InterceptsRemoteCall.class,
         RebindUtils.findTranslatablePackages(context), context);
     addCacheRelevantClasses(standaloneInterceptors);
-    
+
     return new InterceptorProvider(featureInterceptors, standaloneInterceptors);
   }
 
   @Override
-  protected boolean isRelevantNewClass(MetaClass clazz) {
-    return clazz.isAnnotationPresent(Remote.class) || clazz.isAnnotationPresent(FeatureInterceptor.class)
-            || clazz.isAnnotationPresent(InterceptsRemoteCall.class); 
+  protected boolean isRelevantClass(MetaClass clazz) {
+    for (final Annotation anno : clazz.getAnnotations()) {
+      if (anno.annotationType().equals(Remote.class) || anno.annotationType().equals(FeatureInterceptor.class)
+              || anno.annotationType().equals(InterceptsRemoteCall.class)) {
+        return true;
+      }
+    }
+
+    return false;
   }
-  
-  
+
+
 
 }

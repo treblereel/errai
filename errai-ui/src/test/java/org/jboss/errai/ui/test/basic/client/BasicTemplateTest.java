@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.ui.test.basic.client;
 
 import static org.jboss.errai.ui.shared.TemplateUtil.asElement;
@@ -7,14 +23,22 @@ import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ui.shared.TemplateUtil;
 import org.jboss.errai.ui.shared.TemplateWidget;
 import org.jboss.errai.ui.shared.TemplateWidgetMapper;
+import org.jboss.errai.ui.test.basic.client.res.BasicComponent;
+import org.jboss.errai.ui.test.basic.client.res.BasicComponentUsingDataFields;
 import org.jboss.errai.ui.test.basic.client.res.NonCompositeComponent;
+import org.jboss.errai.ui.test.basic.client.res.StyledComponent;
+import org.jboss.errai.ui.test.basic.client.res.StyledComponentWithAbsoluteSheetPath;
+import org.jboss.errai.ui.test.basic.client.res.StyledComponentWithRelativeSheetPath;
+import org.jboss.errai.ui.test.basic.client.res.StyledTemplatedBean;
 import org.junit.Test;
 
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.Element;
+import com.google.gwt.dom.client.StyleInjector;
 import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.Image;
+import com.google.gwt.user.client.ui.RootPanel;
 
 public class BasicTemplateTest extends AbstractErraiCDITest {
 
@@ -156,11 +180,75 @@ public class BasicTemplateTest extends AbstractErraiCDITest {
     final NonCompositeComponent instance = IOC.getBeanManager().lookupBean(NonCompositeComponent.class).getInstance();
     final TemplateWidget rootWidget = TemplateWidgetMapper.get(instance);
 
-    assertTrue(instance.getTextBox().getElement().hasParentElement());
-    assertTrue(instance.getButton().getElement().hasParentElement());
+    assertEquals("The root @DataField was not used.", rootWidget.getElement(), instance.getRoot());
 
-    assertTrue(instance.getTextBox().getElement().getParentElement().equals(rootWidget.getElement()));
-    assertTrue(instance.getButton().getElement().getParentElement().equals(rootWidget.getElement()));
+    assertTrue("The text @DataField was not used.", instance.getTextBox().getElement().hasParentElement());
+    assertTrue("The button @DataField was not used.", instance.getButton().getElement().hasParentElement());
+
+    assertTrue("The text @DataField is not a child of the root element.",
+            instance.getTextBox().getElement().getParentElement().equals(rootWidget.getElement()));
+    assertTrue("The button @DataField is not a child of the root element.",
+            instance.getButton().getElement().getParentElement().equals(rootWidget.getElement()));
   }
+
+  @Test
+  public void testNonCompositeTemplateCleanup() throws Exception {
+    final NonCompositeComponent instance = IOC.getBeanManager().lookupBean(NonCompositeComponent.class).getInstance();
+
+    assertTrue("Non-composite templated bean should have a TemplateWidget mapping after initialization.", TemplateWidgetMapper.containsKey(instance));
+    final TemplateWidget templateWidget = TemplateWidgetMapper.get(instance);
+    assertTrue("TemplateWidget should be attached after initialization.", templateWidget.isAttached());
+    assertTrue("TemplateWidget should be in detach list after initialization.", RootPanel.isInDetachList(templateWidget));
+
+    IOC.getBeanManager().destroyBean(instance);
+
+    assertFalse("Non-composite templated bean should not have a TemplateWidget mapping after destruction.", TemplateWidgetMapper.containsKey(instance));
+    assertFalse("TemplateWidget should not be attached after destruction.", templateWidget.isAttached());
+    assertFalse("TemplateWidget should not be in detach list after destruction.", RootPanel.isInDetachList(templateWidget));
+  }
+
+  @Test
+  public void testCompositeTemplateCleanup() throws Exception {
+    final BasicComponent instance = IOC.getBeanManager().lookupBean(BasicComponentUsingDataFields.class).getInstance();
+
+    assertFalse("Composite templated beans should not have TemplateWidget mappings after initialization.", TemplateWidgetMapper.containsKey(instance));
+    assertTrue("Composite templated bean should be attached after initialization.", instance.isAttached());
+    assertTrue("Composite templated bean should be in the detach list after initialization.", RootPanel.isInDetachList(instance));
+
+    IOC.getBeanManager().destroyBean(instance);
+
+    assertFalse("Composite templated beans should not have TemplateWidget mappings after destructions.", TemplateWidgetMapper.containsKey(instance));
+    assertFalse("Composite templated bean should not be attached after destruction.", instance.isAttached());
+    assertFalse("Composite templated bean should not be in the detach list after destruction.", RootPanel.isInDetachList(instance));
+  }
+
+  @Test
+  public void testStyleSheetWithDefaultPath() throws Exception {
+    final StyledTemplatedBean bean = IOC.getBeanManager().lookupBean(StyledComponent.class).getInstance();
+    styledBeanAssertions(bean, "font-size", "100px");
+  }
+
+  @Test
+  public void testStyleSheetWithRelativePath() throws Exception {
+    final StyledTemplatedBean bean = IOC.getBeanManager().lookupBean(StyledComponentWithRelativeSheetPath.class).getInstance();
+    styledBeanAssertions(bean, "font-color", "red");
+  }
+
+  @Test
+  public void testStyleSheetWithAbsolutePath() throws Exception {
+    final StyledTemplatedBean bean = IOC.getBeanManager().lookupBean(StyledComponentWithAbsoluteSheetPath.class).getInstance();
+    styledBeanAssertions(bean, "margin", "10px");
+  }
+
+  private void styledBeanAssertions(final StyledTemplatedBean bean, final String propertyName, final String propertyValue) {
+    // Need to flush so that styles are computed immediately.
+    StyleInjector.flush();
+    assertTrue("The span element did not receive the class attribute from the template.", bean.getStyled().hasClassName("styled"));
+    assertEquals("Style from StyledComponent.css was not applied.", propertyValue, getPropertyValue(bean.getStyled(), propertyName));
+  }
+
+  private static native String getPropertyValue(Element elem, String prop) /*-{
+    return $wnd.getComputedStyle(elem,null).getPropertyValue(prop);
+  }-*/;
 
 }

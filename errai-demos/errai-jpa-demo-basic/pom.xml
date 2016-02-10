@@ -75,11 +75,51 @@
       <url>https://repository.jboss.org/nexus/content/groups/public</url>
     </repository>
     <repository>
-      <id>central</id>
-      <name>Sonatype Repo</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <id>google-snapshots</id>
+      <name>Google Snapshots Repo</name>
+      <url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>sonatype-public</id>
+      <name>Sonatype Public Snapshots Repo</name>
+      <url>https://oss.sonatype.org/content/repositories/public</url>
     </repository>
   </repositories>
+
+  <!-- This must be here for gwt-maven-plugin 2.8.0-SNAPSHOT -->
+  <pluginRepositories>
+    <pluginRepository>
+      <id>public-snapshots-repo</id>
+      <url>https://oss.sonatype.org/content/repositories/public/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>google-snapshots-repo</id>
+      <url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>jboss</id>
+      <name>JBoss Public Repo</name>
+      <url>https://repository.jboss.org/nexus/content/groups/public</url>
+    </pluginRepository>
+  </pluginRepositories>
 
   <dependencyManagement>
     <dependencies>
@@ -97,12 +137,6 @@
     <dependency>
       <groupId>org.jboss.errai</groupId>
       <artifactId>errai-jpa-client</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.errai</groupId>
-      <artifactId>errai-ui</artifactId>
-      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -171,13 +205,6 @@
     <dependency>
       <groupId>com.google.gwt</groupId>
       <artifactId>gwt-user</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <!-- With gwt-maven-plugin:2.8.0-SNAPSHOT compilation fails without this dependency. -->
-    <dependency>
-      <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-dev</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -521,8 +548,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven.compiler.plugin.version}</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
       <plugin>
@@ -533,7 +560,7 @@
           <strict>true</strict>
           <logLevel>INFO</logLevel>
           <runTarget>index.html</runTarget>
-          <extraJvmArgs>${argLine} -Xmx1g -Xms1g -XX:MaxPermSize=200m -XX:+AggressiveOpts -XX:+UseNUMA -XX:CompileThreshold=100</extraJvmArgs>
+          <extraJvmArgs>${argLine} -Xmx1g -Xms1g -XX:+AggressiveOpts -XX:+UseNUMA -XX:CompileThreshold=100</extraJvmArgs>
           <soyc>false</soyc>
           <hostedWebapp>src/main/webapp/</hostedWebapp>          
         </configuration>
@@ -553,6 +580,19 @@
             </goals>
           </execution>
         </executions>
+        <!-- TODO Remove this once a gwt-maven-plugin version is released supporting GWT 2.8 -->
+        <dependencies>
+          <dependency>
+            <groupId>com.google.gwt</groupId>
+            <artifactId>gwt-user</artifactId>
+            <version>2.8.0-beta1</version>
+          </dependency>
+          <dependency>
+            <groupId>com.google.gwt</groupId>
+            <artifactId>gwt-dev</artifactId>
+            <version>2.8.0-beta1</version>
+          </dependency>
+        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

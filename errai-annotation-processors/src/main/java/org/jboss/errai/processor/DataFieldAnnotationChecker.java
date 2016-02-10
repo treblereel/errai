@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.processor;
 
 import static org.jboss.errai.processor.AnnotationProcessors.*;
@@ -30,26 +46,27 @@ public class DataFieldAnnotationChecker extends AbstractProcessor {
     final Elements elements = processingEnv.getElementUtils();
     final TypeMirror gwtWidgetType = elements.getTypeElement(TypeNames.GWT_WIDGET).asType();
     final TypeMirror gwtElementType = elements.getTypeElement(TypeNames.GWT_ELEMENT).asType();
-    
+
     for (TypeElement annotation : annotations) {
       for (Element target : roundEnv.getElementsAnnotatedWith(annotation)) {
-        if (!types.isAssignable(target.asType(), gwtWidgetType) && !types.isAssignable(target.asType(), gwtElementType)) {
+        if (!types.isAssignable(target.asType(), gwtWidgetType) && !types.isAssignable(target.asType(), gwtElementType)
+                && !isNativeJsType(target.asType(), elements)) {
           processingEnv.getMessager().printMessage(
-                  Kind.ERROR, "Fields anotated with @DataField must be assignable to Widget or Element", target);
+                  Kind.ERROR, "Fields anotated with @DataField must be assignable to Widget or Element, or be a native JsType element wrapper.", target);
         }
-        
+
         Element enclosingClassElement = target.getEnclosingElement();
         if (!hasAnnotation(enclosingClassElement, TypeNames.TEMPLATED)) {
           processingEnv.getMessager().printMessage(
                   Kind.WARNING, "@DataField annotations have no effect outside of @Templated classes",
                   target, getAnnotation(target, TypeNames.DATA_FIELD));
         }
-        
+
         // ideally, we would read the template file now and search it to be sure the element exists.
         // but unfortunately eclipse doesn't let annotation processors read files from the source directory
       }
     }
     return false;
   }
-  
+
 }

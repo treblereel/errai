@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,8 +22,10 @@ import static org.jboss.errai.codegen.util.Stmt.loadLiteral;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.jboss.errai.codegen.BlockStatement;
@@ -56,7 +58,7 @@ import org.jboss.errai.databinding.client.HasProperties;
 import org.jboss.errai.databinding.client.NonExistingPropertyException;
 import org.jboss.errai.databinding.client.PropertyType;
 import org.jboss.errai.databinding.client.api.Bindable;
-import org.jboss.errai.databinding.client.api.InitialState;
+import org.jboss.errai.databinding.client.api.StateSync;
 
 import com.google.gwt.core.ext.TreeLogger;
 
@@ -90,10 +92,10 @@ public class BindableProxyGenerator {
     classBuilder
         .privateField(agentField, parameterizedAs(BindableProxyAgent.class, typeParametersOf(bindable)))
         .finish()
-        .publicConstructor(Parameter.of(InitialState.class, "initialState"))
+        .publicConstructor(Parameter.of(StateSync.class, "initialState"))
         .callThis(Stmt.newObject(bindable), Variable.get("initialState"))
         .finish()
-        .publicConstructor(Parameter.of(bindable, "target"), Parameter.of(InitialState.class, "initialState"))
+        .publicConstructor(Parameter.of(bindable, "target"), Parameter.of(StateSync.class, "initialState"))
         .append(Stmt.loadVariable(agentField).assignValue(
             Stmt.newObject(parameterizedAs(BindableProxyAgent.class, typeParametersOf(bindable)),
                 Variable.get("this"), Variable.get("target"), Variable.get("initialState"))))
@@ -153,6 +155,10 @@ public class BindableProxyGenerator {
     Statement nonExistingPropertyException = Stmt.throw_(NonExistingPropertyException.class, Variable.get("property"));
     getMethod.append(nonExistingPropertyException).finish();
     setMethod.append(nonExistingPropertyException).finish();
+    
+    classBuilder.publicMethod(Map.class, "getBeanProperties")
+      .append(Stmt.invokeStatic(Collections.class, "unmodifiableMap", agent().loadField("propertyTypes")).returnValue())
+    .finish();
   }
 
   /**
@@ -225,7 +231,7 @@ public class BindableProxyGenerator {
             Stmt.if_(Bool.expr(agent("binders").invoke("containsKey", property)))
                 .append(Stmt.loadVariable(property).assignValue(Cast.to(paramType,
                     agent("binders").invoke("get", property).invoke("setModel", Variable.get(property),
-                        Stmt.loadStatic(InitialState.class, "FROM_MODEL"),
+                        Stmt.loadStatic(StateSync.class, "FROM_MODEL"),
                         Stmt.loadLiteral(true)))))
                 .finish();
       }

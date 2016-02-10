@@ -1,11 +1,11 @@
 /*
- * Copyright 2012 JBoss, by Red Hat, Inc
+ * Copyright (C) 2012 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.ui.rebind;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import javax.inject.Inject;
 
 import org.jboss.errai.codegen.Statement;
 import org.jboss.errai.codegen.exception.GenerationException;
@@ -59,12 +58,6 @@ public class DataFieldCodeDecorator extends IOCDecoratorExtension<DataField> {
     Statement instance = decorable.getAccessStatement();
     String name = getTemplateDataFieldName((DataField) decorable.getAnnotation(), decorable.getName());
     if (decorable.getType().isAssignableTo(Element.class)) {
-      if (decorable.get().isAnnotationPresent(Inject.class)) {
-        throw new GenerationException("@DataField [" + name + "] in class ["
-            + decorable.getDecorableDeclaringType().getFullyQualifiedName() + "] is of type ["
-            + decorable.getType().getFullyQualifiedName()
-            + "] which does not support @Inject; this instance must be created manually.");
-      }
       instance = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget", instance);
     } else if (RebindUtil.isNativeJsType(decorable.getType()) || RebindUtil.isElementalIface(decorable.getType())) {
       instance = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget", Stmt.invokeStatic(TemplateUtil.class, "asElement", instance));

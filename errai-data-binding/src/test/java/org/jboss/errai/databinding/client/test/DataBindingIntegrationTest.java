@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.errai.databinding.client.BindableProxy;
+import org.jboss.errai.databinding.client.BindableProxyFactory;
 import org.jboss.errai.databinding.client.DeclarativeBindingModule;
 import org.jboss.errai.databinding.client.DeclarativeBindingModuleUsingBinder;
 import org.jboss.errai.databinding.client.DeclarativeBindingModuleUsingModel;
@@ -45,9 +46,9 @@ import org.jboss.errai.databinding.client.TestModelWithoutBindableAnnotation;
 import org.jboss.errai.databinding.client.WidgetAlreadyBoundException;
 import org.jboss.errai.databinding.client.api.Convert;
 import org.jboss.errai.databinding.client.api.DataBinder;
-import org.jboss.errai.databinding.client.api.InitialState;
 import org.jboss.errai.databinding.client.api.PropertyChangeEvent;
 import org.jboss.errai.databinding.client.api.PropertyChangeHandler;
+import org.jboss.errai.databinding.client.api.StateSync;
 import org.jboss.errai.ioc.client.container.Factory;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ioc.client.test.AbstractErraiIOCTest;
@@ -59,6 +60,7 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.event.dom.client.DomEvent;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.user.client.ui.CheckBox;
+import com.google.gwt.user.client.ui.IntegerBox;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.TextBox;
 
@@ -83,8 +85,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBasicBinding() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "value").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "value").getModel();
 
     textBox.setValue("UI change", true);
     assertEquals("Model not properly updated", "UI change", model.getValue());
@@ -92,14 +94,33 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
     model.setValue("model change");
     assertEquals("Widget not properly updated", "model change", textBox.getText());
   }
+  
+  @Test
+  public void testBindingWithHasTextAndHasValue() {
+    final IntegerBox integerBox = new IntegerBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(integerBox, "age").getModel();
+
+    integerBox.setValue(5, true);
+    assertEquals("Model not properly updated", (Integer) 5, model.getAge());
+
+    model.setAge(3);
+    assertEquals("Widget not properly updated", "3", integerBox.getText());
+
+    integerBox.setValue(null, true);
+    assertEquals("Model not properly updated", (Integer) null, model.getAge());
+    
+    model.setAge(null);
+    assertEquals("Widget not properly updated", "", integerBox.getText());
+
+  }
 
   @Test
   public void testBasicBindingWithInjection() {
-    ModuleWithInjectedDataBinder module =
+    final ModuleWithInjectedDataBinder module =
         IOC.getBeanManager().lookupBean(ModuleWithInjectedDataBinder.class).getInstance();
 
-    TestModel model = module.getModel();
-    TextBox nameTextBox = module.getNameTextBox();
+    final TestModel model = module.getModel();
+    final TextBox nameTextBox = module.getNameTextBox();
 
     model.setName("model change");
     assertEquals("Widget not properly updated", "model change", nameTextBox.getText());
@@ -110,8 +131,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBasicBindingOfNonAnnotatedType() {
-    TextBox textBox = new TextBox();
-    TestModelWithoutBindableAnnotation model =
+    final TextBox textBox = new TextBox();
+    final TestModelWithoutBindableAnnotation model =
         DataBinder.forType(TestModelWithoutBindableAnnotation.class).bind(textBox, "value").getModel();
 
     textBox.setValue("UI change", true);
@@ -123,8 +144,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testNestedBindingOfNonAnnotatedType() {
-    TextBox textBox = new TextBox();
-    TestModelWithoutBindableAnnotation model =
+    final TextBox textBox = new TextBox();
+    final TestModelWithoutBindableAnnotation model =
         DataBinder.forType(TestModelWithoutBindableAnnotation.class).bind(textBox, "child.value").getModel();
 
     textBox.setValue("UI change", true);
@@ -136,15 +157,15 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testNestedBindingWithModelChange() {
-    TextBox textBox = new TextBox();
+    final TextBox textBox = new TextBox();
     TestModel model = new TestModel();
-    DataBinder<TestModel> binder = DataBinder.forModel(model, InitialState.FROM_MODEL);
+    final DataBinder<TestModel> binder = DataBinder.forModel(model, StateSync.FROM_MODEL);
     model = binder.bind(textBox, "child.value").getModel();
 
     textBox.setValue("old string", true);
     assertEquals("Model not properly updated", "old string", model.getChild().getValue());
 
-    TestModel newChild = new TestModel();
+    final TestModel newChild = new TestModel();
 
     newChild.value = "new string";
     model.setChild(newChild);
@@ -154,8 +175,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingOfReadOnlyField() {
-    Label label = new Label();
-    TestModel model = DataBinder.forType(TestModel.class).bind(label, "id").getModel();
+    final Label label = new Label();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(label, "id").getModel();
 
     model.setId(1701);
     assertEquals("Widget not properly updated", "1701", label.getText());
@@ -163,8 +184,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingWithDefaultConversion() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "age").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "age").getModel();
 
     model.setAge(25);
     assertEquals("Widget not properly updated", model.getAge().toString(), textBox.getText());
@@ -179,7 +200,7 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
       DataBinder.forType(TestModel.class).bind(new TextBox(), "non-existing");
       fail("Expected NonExistingPropertyException!");
     }
-    catch (NonExistingPropertyException nepe) {
+    catch (final NonExistingPropertyException nepe) {
       // expected
       assertEquals("Exception message contains wrong property name", "non-existing", nepe.getMessage());
     }
@@ -187,12 +208,12 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingOfSingleWidgetToMultiplePropertiesThrowsException() {
-    TextBox textBox = new TextBox();
+    final TextBox textBox = new TextBox();
     try {
       DataBinder.forType(TestModel.class).bind(textBox, "value").bind(textBox, "name");
       fail("Binding a widget to multiple properties should fail with an exception!");
     }
-    catch (WidgetAlreadyBoundException e) {
+    catch (final WidgetAlreadyBoundException e) {
       // expected
       assertTrue("Exception message does not contain property name", e.getMessage().contains("value"));
     }
@@ -200,9 +221,9 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingOfSinglePropertyToMultipleWidgets() {
-    TextBox textBox1 = new TextBox();
-    TextBox textBox2 = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class)
+    final TextBox textBox1 = new TextBox();
+    final TextBox textBox2 = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class)
         .bind(textBox1, "value")
         .bind(textBox2, "value").getModel();
 
@@ -221,9 +242,9 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testUnbindingSpecificProperty() {
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
-    TextBox textBox = new TextBox();
-    TestModel model = binder.bind(textBox, "value").getModel();
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
+    final TextBox textBox = new TextBox();
+    final TestModel model = binder.bind(textBox, "value").getModel();
 
     binder.unbind("value");
 
@@ -236,9 +257,9 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testUnbindingAllProperties() {
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
-    TextBox textBox = new TextBox();
-    TestModel model = binder.bind(textBox, "value").getModel();
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
+    final TextBox textBox = new TextBox();
+    final TestModel model = binder.bind(textBox, "value").getModel();
 
     binder.unbind();
 
@@ -251,14 +272,14 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingOfMultipleProperties() {
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
-    TextBox valueTextBox = new TextBox();
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
+    final TextBox valueTextBox = new TextBox();
     binder.bind(valueTextBox, "value");
 
-    TextBox nameTextBox = new TextBox();
+    final TextBox nameTextBox = new TextBox();
     binder.bind(nameTextBox, "name");
 
-    TestModel model = binder.getModel();
+    final TestModel model = binder.getModel();
 
     nameTextBox.setValue("ui.name", true);
     assertEquals("Name not properly updated", "ui.name", model.getName());
@@ -292,67 +313,67 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingWithModelInstanceChange() {
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
-    TextBox textBox = new TextBox();
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
+    final TextBox textBox = new TextBox();
     binder.bind(textBox, "name");
 
     TestModel model = new TestModel();
     model.setName("initial name");
-    binder.setModel(model, InitialState.FROM_MODEL);
+    binder.setModel(model, StateSync.FROM_MODEL);
     assertEquals("Widget not updated after model change", "initial name", textBox.getText());
 
     model = new TestModel();
     textBox.setText("changed name");
-    binder.setModel(model, InitialState.FROM_UI);
+    binder.setModel(model, StateSync.FROM_UI);
     assertEquals("Model not updated after model change", "changed name", model.getName());
   }
 
   @Test
   public void testBindingWithInitialStateSync() {
-    TextBox textBox = new TextBox();
+    final TextBox textBox = new TextBox();
     textBox.setValue("initial ui value");
 
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class, InitialState.FROM_UI).bind(textBox, "name");
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class, StateSync.FROM_UI).bind(textBox, "name");
     assertEquals("Model not initialized based on widget's state", "initial ui value", binder.getModel().getName());
 
-    TestModel model = new TestModel();
+    final TestModel model = new TestModel();
     model.setName("initial model value");
-    DataBinder.forModel(model, InitialState.FROM_MODEL).bind(textBox, "name");
+    DataBinder.forModel(model, StateSync.FROM_MODEL).bind(textBox, "name");
     assertEquals("Model not initialized based on widget's state", "initial model value", textBox.getValue());
   }
 
   @Test
   public void testBindingToCustomHasValueType() {
-    TestModelWidget widget = new TestModelWidget();
+    final TestModelWidget widget = new TestModelWidget();
 
-    TestModel childModel = new TestModel();
+    final TestModel childModel = new TestModel();
     childModel.setName("child");
 
-    TestModel model = new TestModel();
+    final TestModel model = new TestModel();
     model.setChild(childModel);
 
-    DataBinder<TestModel> binder = DataBinder.forModel(model, InitialState.FROM_MODEL).bind(widget, "child");
+    final DataBinder<TestModel> binder = DataBinder.forModel(model, StateSync.FROM_MODEL).bind(widget, "child");
     assertEquals("Widget not updated based on model's state", childModel, binder.getModel().getChild());
   }
 
   @Test
   public void testBindingToCustomTakesValueType() {
-    TestModelTakesValueWidget widget = new TestModelTakesValueWidget();
+    final TestModelTakesValueWidget widget = new TestModelTakesValueWidget();
 
-    TestModel childModel = new TestModel();
+    final TestModel childModel = new TestModel();
     childModel.setName("child");
 
-    TestModel model = new TestModel();
+    final TestModel model = new TestModel();
     model.setChild(childModel);
 
-    DataBinder<TestModel> binder = DataBinder.forModel(model, InitialState.FROM_MODEL).bind(widget, "child");
+    final DataBinder<TestModel> binder = DataBinder.forModel(model, StateSync.FROM_MODEL).bind(widget, "child");
     assertEquals("Widget not updated based on model's state", childModel, binder.getModel().getChild());
   }
 
   @Test
   public void testBindablePropertyChain() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.value").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.value").getModel();
 
     textBox.setValue("UI change", true);
     assertEquals("Model not properly updated", "UI change", model.getChild().getValue());
@@ -363,8 +384,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindablePropertyChainTwoLevelsDeep() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.child.name").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.child.name").getModel();
 
     textBox.setValue("UI change", true);
     assertEquals("Model not properly updated", "UI change", model.getChild().getChild().getName());
@@ -375,18 +396,18 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindablePropertyChainWithRootInstanceChange() {
-    TextBox textBox = new TextBox();
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class).bind(textBox, "child.child.value");
+    final TextBox textBox = new TextBox();
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class).bind(textBox, "child.child.value");
 
     TestModel model = new TestModel();
-    TestModel childModel = new TestModel();
-    TestModel grandChildModel = new TestModel("value1");
+    final TestModel childModel = new TestModel();
+    final TestModel grandChildModel = new TestModel("value1");
     childModel.setChild(grandChildModel);
     model.setChild(childModel);
     binder.setModel(model);
     assertEquals("Widget not properly updated", "value1", textBox.getText());
 
-    TestModel newGrandChildModel = new TestModel("value2");
+    final TestModel newGrandChildModel = new TestModel("value2");
     childModel.setChild(newGrandChildModel);
     model = binder.setModel(model);
     assertEquals("Widget not properly updated", "value2", textBox.getText());
@@ -400,8 +421,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindablePropertyChainWithNestedInstanceChange() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.value").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.value").getModel();
 
     model.setChild(new TestModel("value"));
     assertEquals("Widget not properly updated", "value", textBox.getText());
@@ -418,8 +439,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindablePropertyChainWithNestedConfiguredInstanceChange() {
-    TextBox textBox = new TextBox();
-    TestModelWithNestedConfiguredBindable model = DataBinder.forType(TestModelWithNestedConfiguredBindable.class)
+    final TextBox textBox = new TextBox();
+    final TestModelWithNestedConfiguredBindable model = DataBinder.forType(TestModelWithNestedConfiguredBindable.class)
             .bind(textBox, "nested.value").getModel();
 
     model.setNested(new TestModelWithoutBindableAnnotation("value"));
@@ -437,8 +458,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindablePropertyChainWithNestedInstanceChangeInNonAccessorMethod() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.child.value").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.child.value").getModel();
 
     // changing the nested bindable using a non accessor method
     model.resetChildren();
@@ -453,11 +474,11 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindablePropertyChainWithInitialStateSync() {
-    TextBox textBox = new TextBox();
+    final TextBox textBox = new TextBox();
     textBox.setValue("initial ui value");
 
     DataBinder<TestModel> binder =
-        DataBinder.forType(TestModel.class, InitialState.FROM_UI).bind(textBox, "child.name");
+        DataBinder.forType(TestModel.class, StateSync.FROM_UI).bind(textBox, "child.name");
     assertEquals("Model not initialized based on widget's state", "initial ui value",
         binder.getModel().getChild().getName());
 
@@ -466,7 +487,7 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
     TestModel model = new TestModel();
     model.setChild(childModel);
 
-    binder = DataBinder.forModel(model, InitialState.FROM_MODEL).bind(textBox, "child.name");
+    binder = DataBinder.forModel(model, StateSync.FROM_MODEL).bind(textBox, "child.name");
     assertEquals("Model not initialized based on widget's state", "initial model value", textBox.getValue());
 
     childModel = new TestModel();
@@ -474,19 +495,19 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
     model = new TestModel();
     model.setChild(childModel);
 
-    binder.setModel(model, InitialState.FROM_MODEL);
+    binder.setModel(model, StateSync.FROM_MODEL);
     assertEquals("Model not initialized based on widget's state", "updated model value", textBox.getValue());
   }
 
   @Test
   public void testBindablePropertyChainWithUnbinding() {
-    TextBox valueTextBox = new TextBox();
-    TextBox nameTextBox = new TextBox();
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class)
+    final TextBox valueTextBox = new TextBox();
+    final TextBox nameTextBox = new TextBox();
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class)
         .bind(valueTextBox, "child.value")
         .bind(nameTextBox, "child.name");
 
-    TestModel model = binder.getModel();
+    final TestModel model = binder.getModel();
 
     // unbind specific nested property
     binder.unbind("child.name");
@@ -521,8 +542,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingUsingNonAccessorMethod() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "active").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "active").getModel();
 
     // change the property 'active' using a non accessor method.
     model.activate();
@@ -532,8 +553,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingUsingNonAccessorMethodCalledSet() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "active").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "active").getModel();
 
     // change the property 'active' using a non accessor method.
     model.setActivateStatus(true);
@@ -544,8 +565,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindablePropertyChainsUsingNonAccessorMethod() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.active").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.active").getModel();
 
     // change the property 'active' on the model and all children using a non accessor method.
     model.activate();
@@ -555,8 +576,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindablePropertyChainsUsingNonAccesssorMethodOnChild() {
-    TextBox textBox = new TextBox();
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.active").getModel();
+    final TextBox textBox = new TextBox();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.active").getModel();
 
     // change the property 'active' using a non accessor method.
     model.getChild().activate();
@@ -566,49 +587,49 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindableProxyMarshalling() {
-    TestModel model = DataBinder.forType(TestModel.class).bind(new TextBox(), "value").getModel();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(new TextBox(), "value").getModel();
     model.setName("test");
 
-    String marshalledModel = Marshalling.toJSON(model);
+    final String marshalledModel = Marshalling.toJSON(model);
     assertEquals(model, Marshalling.fromJSON(marshalledModel, TestModel.class));
   }
 
   @Test
   public void testBindableProxyListMarshalling() {
-    TestModel model = DataBinder.forType(TestModel.class).bind(new TextBox(), "value").getModel();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(new TextBox(), "value").getModel();
     model.setName("test");
 
-    List<TestModel> modelList = new ArrayList<TestModel>();
+    final List<TestModel> modelList = new ArrayList<TestModel>();
     modelList.add(model);
-    String marshalledModelList = Marshalling.toJSON(modelList);
+    final String marshalledModelList = Marshalling.toJSON(modelList);
     assertEquals(modelList, Marshalling.fromJSON(marshalledModelList, List.class));
   }
 
   @Test
   public void testBindableProxyMapMarshalling() {
-    TestModel model = DataBinder.forType(TestModel.class).bind(new TextBox(), "value").getModel();
+    final TestModel model = DataBinder.forType(TestModel.class).bind(new TextBox(), "value").getModel();
     model.setName("test");
 
-    Map<TestModel, TestModel> modelMap = new HashMap<TestModel, TestModel>();
+    final Map<TestModel, TestModel> modelMap = new HashMap<TestModel, TestModel>();
     modelMap.put(model, model);
-    String marshalledModelMap = Marshalling.toJSON(modelMap);
+    final String marshalledModelMap = Marshalling.toJSON(modelMap);
     assertEquals(modelMap, Marshalling.fromJSON(marshalledModelMap, Map.class));
   }
 
   @Test
   public void testBindableProxyToString() {
-    TestModel model = new TestModel();
+    final TestModel model = new TestModel();
     model.setName("test");
 
-    DataBinder<TestModel> binder = DataBinder.forModel(model);
+    final DataBinder<TestModel> binder = DataBinder.forModel(model);
     assertEquals(model.toString(), binder.getModel().toString());
   }
 
   @Test
   public void testGetWidgets() {
-    TextBox textBox1 = new TextBox();
-    TextBox textBox2 = new TextBox();
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class).bind(textBox1, "value").bind(textBox2, "value");
+    final TextBox textBox1 = new TextBox();
+    final TextBox textBox2 = new TextBox();
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class).bind(textBox1, "value").bind(textBox2, "value");
 
     assertEquals("Bound widget not found", textBox1, binder.getWidgets("value").get(0));
     assertEquals("Bound widget not found", textBox2, binder.getWidgets("value").get(1));
@@ -617,11 +638,11 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testGetBoundProperties() {
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class)
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class)
         .bind(new TextBox(), "value")
         .bind(new TextBox(), "child.child.value");
 
-    Set<String> boundProperties = binder.getBoundProperties();
+    final Set<String> boundProperties = binder.getBoundProperties();
     assertNotNull("Bound properties set should not be null", boundProperties);
     assertEquals("There should be exactly two bound properties", 2, boundProperties.size());
     assertTrue("value should be a bound property", boundProperties.contains("value"));
@@ -632,9 +653,9 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
   public void testUpdateWidgets() {
     final List<String> changedProperties = new ArrayList<String>();
 
-    TestModel model = new TestModel();
-    TextBox textBox = new TextBox();
-    DataBinder<TestModel> binder = DataBinder.forModel(model).bind(textBox, "value");
+    final TestModel model = new TestModel();
+    final TextBox textBox = new TextBox();
+    final DataBinder<TestModel> binder = DataBinder.forModel(model).bind(textBox, "value");
 
     binder.addPropertyChangeHandler(new PropertyChangeHandler<Long>() {
       @Override
@@ -658,23 +679,23 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
   @Test
   @SuppressWarnings("unchecked")
   public void testDeepUnwrap() {
-    TestModel parent = new TestModel("v0");
+    final TestModel parent = new TestModel("v0");
     parent.setName("parent");
 
-    TestModel child = new TestModel("v1");
+    final TestModel child = new TestModel("v1");
     child.setName("child");
 
-    TestModel grandChild = new TestModel("v2");
+    final TestModel grandChild = new TestModel("v2");
     grandChild.setName("grandChild");
 
     child.setChild(grandChild);
     parent.setChild(child);
 
-    DataBinder<TestModel> binder = DataBinder.forModel(parent)
+    final DataBinder<TestModel> binder = DataBinder.forModel(parent)
       .bind(new TextBox(), "child.value")
       .bind(new TextBox(), "child.child.value");
 
-    TestModel unwrapped = ((BindableProxy<TestModel>) binder.getModel()).deepUnwrap();
+    final TestModel unwrapped = ((BindableProxy<TestModel>) binder.getModel()).deepUnwrap();
     assertNotNull(unwrapped);
     assertNotNull(unwrapped.getChild());
     assertNotNull(unwrapped.getChild().getChild());
@@ -692,14 +713,14 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testUpdateWidgetsWithBindablePropertyChain() {
-    TestModel grandChildModel = new TestModel();
-    TestModel childModel = new TestModel();
+    final TestModel grandChildModel = new TestModel();
+    final TestModel childModel = new TestModel();
     childModel.setChild(grandChildModel);
-    TestModel model = new TestModel();
+    final TestModel model = new TestModel();
     model.setChild(childModel);
 
-    TextBox textBox = new TextBox();
-    DataBinder<TestModel> binder = DataBinder.forModel(model).bind(textBox, "child.child.value");
+    final TextBox textBox = new TextBox();
+    final DataBinder<TestModel> binder = DataBinder.forModel(model).bind(textBox, "child.child.value");
 
     // using direct field access on the target object so the bindable proxy has no chance of seeing
     // the change
@@ -716,23 +737,23 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testDeclarativeBindingUsingBinder() {
-    DeclarativeBindingModule module =
+    final DeclarativeBindingModule module =
         IOC.getBeanManager().lookupBean(DeclarativeBindingModuleUsingBinder.class).getInstance();
     testDeclarativeBinding(module);
   }
 
   @Test
   public void testDeclarativeBindingUsingModel() {
-    DeclarativeBindingModule module =
+    final DeclarativeBindingModule module =
         IOC.getBeanManager().lookupBean(DeclarativeBindingModuleUsingModel.class).getInstance();
     testDeclarativeBinding(module);
   }
 
   @Test
   public void testDeclarativeBindingUsingModelSetter() {
-    DeclarativeBindingModuleUsingModel module =
+    final DeclarativeBindingModuleUsingModel module =
          IOC.getBeanManager().lookupBean(DeclarativeBindingModuleUsingModel.class).getInstance();
-    TestModel model = new TestModel();
+    final TestModel model = new TestModel();
     model.setId(123);
     model.setName("custom name");
     module.setModel(model);
@@ -749,29 +770,29 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testDeclarativeBindingUsingParams() {
-    DeclarativeBindingModule module =
+    final DeclarativeBindingModule module =
         IOC.getBeanManager().lookupBean(DeclarativeBindingModuleUsingParams.class).getInstance();
     testDeclarativeBinding(module);
   }
 
   public void testDeclarativeBinding(DeclarativeBindingModule module) {
-    Label idLabel = module.getLabel();
+    final Label idLabel = module.getLabel();
     assertNotNull(idLabel);
     assertEquals("", idLabel.getText());
 
-    TextBox nameTextBox = module.getNameTextBox();
+    final TextBox nameTextBox = module.getNameTextBox();
     assertNotNull(nameTextBox);
     assertEquals("", nameTextBox.getValue());
 
-    TextBox dateTextBox = module.getDateTextBox();
+    final TextBox dateTextBox = module.getDateTextBox();
     assertNotNull(dateTextBox);
     assertEquals("", dateTextBox.getValue());
 
-    TextBox age = module.getAge();
+    final TextBox age = module.getAge();
     assertNotNull(age);
     assertEquals("", age.getValue());
 
-    TestModel model = module.getModel();
+    final TestModel model = module.getModel();
     model.setId(1711);
     model.getChild().setName("errai");
     model.setLastChanged(new Date());
@@ -793,7 +814,7 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testInjectedBindableTypeIsNotBound() {
-    ModuleWithInjectedBindable module =
+    final ModuleWithInjectedBindable module =
         IOC.getBeanManager().lookupBean(ModuleWithInjectedBindable.class).getInstance();
 
     // injecting a bindable type without @Model qualification shouldn't result in a bindable proxy
@@ -804,12 +825,12 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingWithSharedModel() {
-    TextBox textBox1 = new TextBox();
-    TextBox textBox2 = new TextBox();
-    TestModel model = new TestModel();
+    final TextBox textBox1 = new TextBox();
+    final TextBox textBox2 = new TextBox();
+    final TestModel model = new TestModel();
 
-    DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
-    DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "value");
+    final DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
+    final DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "value");
     // Ensure we got the same proxy instance for our model instance
     assertSame(binder1.getModel(), binder2.getModel());
 
@@ -832,12 +853,12 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingWithSharedModelProxy() {
-    TextBox textBox1 = new TextBox();
-    TextBox textBox2 = new TextBox();
-    TestModel model = new TestModel();
+    final TextBox textBox1 = new TextBox();
+    final TextBox textBox2 = new TextBox();
+    final TestModel model = new TestModel();
 
-    DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
-    DataBinder<TestModel> binder2 = DataBinder.forModel(binder1.getModel()).bind(textBox2, "value");
+    final DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
+    final DataBinder<TestModel> binder2 = DataBinder.forModel(binder1.getModel()).bind(textBox2, "value");
     // Ensure we got the same proxy instance for our model instance
     assertSame(binder1.getModel(), binder2.getModel());
 
@@ -860,12 +881,12 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testUnbindingWithSharedModel() {
-    TextBox textBox1 = new TextBox();
-    TextBox textBox2 = new TextBox();
-    TestModel model = new TestModel();
+    final TextBox textBox1 = new TextBox();
+    final TextBox textBox2 = new TextBox();
+    final TestModel model = new TestModel();
 
-    DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
-    DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "value");
+    final DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
+    final DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "value");
     assertSame(binder1.getModel(), binder2.getModel());
     binder1.unbind();
 
@@ -884,14 +905,14 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testSetModelWithSharedProxies() {
-    TextBox textBox1 = new TextBox();
-    TextBox textBox2 = new TextBox();
-    TestModel model = new TestModel();
+    final TextBox textBox1 = new TextBox();
+    final TextBox textBox2 = new TextBox();
+    final TestModel model = new TestModel();
 
-    DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
-    DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "name");
-    TestModel modelProxy1 = binder1.getModel();
-    TestModel modelProxy2 = binder2.getModel();
+    final DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
+    final DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "name");
+    final TestModel modelProxy1 = binder1.getModel();
+    final TestModel modelProxy2 = binder2.getModel();
     assertSame(modelProxy1, modelProxy2);
 
     assertEquals("", textBox1.getText());
@@ -914,20 +935,20 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testSetModelWithSharedProxiesAndPropertyChain() {
-    TextBox textBox1 = new TextBox();
-    TextBox textBox2 = new TextBox();
-    TestModel model = new TestModel();
+    final TextBox textBox1 = new TextBox();
+    final TextBox textBox2 = new TextBox();
+    final TestModel model = new TestModel();
 
-    DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "child.value");
-    DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "child.value");
-    TestModel modelProxy1 = binder1.getModel();
-    TestModel modelProxy2 = binder2.getModel();
+    final DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "child.value");
+    final DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "child.value");
+    final TestModel modelProxy1 = binder1.getModel();
+    final TestModel modelProxy2 = binder2.getModel();
     assertSame(modelProxy1, modelProxy2);
 
     assertEquals("", textBox1.getText());
     assertEquals("", textBox2.getText());
 
-    TestModel model2 = new TestModel();
+    final TestModel model2 = new TestModel();
     model2.setChild(new TestModel("value1"));
     binder1.setModel(model2);
     assertEquals("value1", textBox1.getText());
@@ -947,14 +968,14 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testSharedProxyCleanup() {
-    TextBox textBox1 = new TextBox();
-    TextBox textBox2 = new TextBox();
-    TestModel model = new TestModel();
+    final TextBox textBox1 = new TextBox();
+    final TextBox textBox2 = new TextBox();
+    final TestModel model = new TestModel();
 
-    DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
-    DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "value");
-    TestModel modelProxy1 = binder1.getModel();
-    TestModel modelProxy2 = binder2.getModel();
+    final DataBinder<TestModel> binder1 = DataBinder.forModel(model).bind(textBox1, "value");
+    final DataBinder<TestModel> binder2 = DataBinder.forModel(model).bind(textBox2, "value");
+    final TestModel modelProxy1 = binder1.getModel();
+    final TestModel modelProxy2 = binder2.getModel();
     assertSame(modelProxy1, modelProxy2);
 
     // Unbinding all binders for a given proxy should clear it from the cache we keep to ensure that
@@ -972,8 +993,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testListChangesTriggerWidgetUpdates() {
-    ListOfStringWidget widget = new ListOfStringWidget();
-    TestModelWithList model = DataBinder.forType(TestModelWithList.class).bind(widget, "list").getModel();
+    final ListOfStringWidget widget = new ListOfStringWidget();
+    final TestModelWithList model = DataBinder.forType(TestModelWithList.class).bind(widget, "list").getModel();
 
     model.getList().add("1");
     assertEquals("Widget not properly updated", 1, widget.getValue().size());
@@ -985,10 +1006,10 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testDeclarativeBindingWithKeyUpBindingEvent() {
-    DeclarativeBindingModule module =
+    final DeclarativeBindingModule module =
         IOC.getBeanManager().lookupBean(DeclarativeBindingModuleWithKeyUpEvent.class).getInstance();
 
-    TestModel model = module.getModel();
+    final TestModel model = module.getModel();
     model.setAge(1);
     assertEquals("Widget not properly updated", model.getAge(), new Integer(module.getAge().getValue()));
 
@@ -1001,10 +1022,10 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testDeclarativeBindingWithKeyUpEventAndChainedProperty () {
-    DeclarativeBindingModule module =
+    final DeclarativeBindingModule module =
       IOC.getBeanManager().lookupBean(DeclarativeBindingModuleWithKeyUpEvent.class).getInstance();
 
-    TestModel model = module.getModel();
+    final TestModel model = module.getModel();
     model.getChild().setName("model change");
     assertEquals("Widget not properly updated", model.getChild().getName(), module.getNameTextBox().getValue());
 
@@ -1017,11 +1038,11 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testInjectedDataBinderWithKeyUpEvent () {
-     InjectedDataBinderModuleBoundOnKeyUp module =
+     final InjectedDataBinderModuleBoundOnKeyUp module =
         IOC.getBeanManager().lookupBean(InjectedDataBinderModuleBoundOnKeyUp.class).getInstance();
 
-    TestModel model = module.getModel();
-    TextBox nameTextBox = module.getNameTextBox();
+    final TestModel model = module.getModel();
+    final TextBox nameTextBox = module.getNameTextBox();
 
     model.setName("model change");
     assertEquals("Widget not properly updated", "model change", nameTextBox.getText());
@@ -1036,9 +1057,9 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testUnbindingWithKeyUpEvent() {
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
-    TextBox textBox = new TextBox();
-    TestModel model = binder.bind(textBox, "value", null, true).getModel();
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
+    final TextBox textBox = new TextBox();
+    final TestModel model = binder.bind(textBox, "value", null, true).getModel();
 
     textBox.setValue("UI change");
     DomEvent.fireNativeEvent(Document.get().createKeyUpEvent(false, false, false, false, KeyCodes.KEY_E), textBox);
@@ -1058,9 +1079,9 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testSetModelWithKeyUpEvent() throws Exception {
-    DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
-    TextBox textBox = new TextBox();
-    TestModel model = binder.bind(textBox, "value", null, true).getModel();
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class);
+    final TextBox textBox = new TextBox();
+    final TestModel model = binder.bind(textBox, "value", null, true).getModel();
 
     textBox.setValue("UI change");
     DomEvent.fireNativeEvent(Document.get().createKeyUpEvent(false, false, false, false, KeyCodes.KEY_E), textBox);
@@ -1078,22 +1099,22 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBindingNonTextWidgetOnUnhandledEvent() {
-    CheckBox checkBox = new CheckBox();
+    final CheckBox checkBox = new CheckBox();
     try {
       // bind non-ValueBoxBase widget on KeyUpEvents
       DataBinder.forType(TestModel.class).bind(checkBox, "active", null, true);
       fail("Widgets that do not extend ValueBoxBase should not bind on KeyUpEvents.");
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // this is the expected behavior
     }
   }
 
   @Test
   public void testKeyUpWithMultipleWidgetsBoundToChainedProperty() {
-    TextBox textBox = new TextBox();
-    Label label = new Label();
+    final TextBox textBox = new TextBox();
+    final Label label = new Label();
 
-    TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.name", null, true)
+    final TestModel model = DataBinder.forType(TestModel.class).bind(textBox, "child.name", null, true)
                         .bind(label, "child.name").getModel();
 
     textBox.setValue("new value");
@@ -1105,8 +1126,8 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
 
   @Test
   public void testBidirectionalChainedKeyUpEventBinding() {
-    TextBox tb1 = new TextBox();
-    TextBox tb2 = new TextBox();
+    final TextBox tb1 = new TextBox();
+    final TextBox tb2 = new TextBox();
 
     DataBinder.forType(TestModel.class).bind(tb1, "child.name", null, true)
       .bind(tb2, "child.name", null, true);
@@ -1120,5 +1141,123 @@ public class DataBindingIntegrationTest extends AbstractErraiIOCTest {
     DomEvent.fireNativeEvent(Document.get().createKeyUpEvent(false, false, false, false, KeyCodes.KEY_NUM_TWO), tb2);
 
     assertEquals("First widget not updated", tb2.getValue(), tb1.getValue());
+  }
+  
+  @Test
+  public void testPauseResumeFromUI() {
+    final TextBox textBox = new TextBox();
+
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class).bind(textBox, "value");
+    final TestModel model = binder.getModel();
+    
+    binder.pause();
+    assertSame("Pause should not change model instance", model, binder.getModel());
+    
+    textBox.setValue("UI change paused", true);
+    assertEquals("Model should not have been updated while paused", null, model.getValue());
+    model.setValue("model change while paused");
+    assertEquals("Widget should not have been updated while paused", "UI change paused", textBox.getText());
+    
+    binder.resume(StateSync.FROM_UI);
+    assertEquals("Model not properly updated", "UI change paused", model.getValue());
+    assertEquals("Widget should not have been updated", "UI change paused", textBox.getText());
+    
+    textBox.setValue("UI change resumed", true);
+    assertEquals("Model not properly updated", "UI change resumed", model.getValue());
+    model.setValue("model change resumed");
+    assertEquals("Widget not properly updated", "model change resumed", textBox.getText());
+  }
+  
+  @Test
+  public void testPauseResumeFromModel() {
+    final TextBox textBox = new TextBox();
+
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class).bind(textBox, "value");
+    final TestModel model = binder.getModel();
+    
+    binder.pause();
+    assertSame("Pause should not change model instance", model, binder.getModel());
+    
+    textBox.setValue("UI change paused", true);
+    assertEquals("Model should not have been updated", null, model.getValue());
+    model.setValue("model change paused");
+    assertEquals("Widget should not have been updated", "UI change paused", textBox.getText());
+    
+    binder.resume(StateSync.FROM_MODEL);
+    assertEquals("Widget not properly updated", "model change paused", textBox.getText());
+    assertEquals("Model should not have been updated", "model change paused", model.getValue());
+    
+    textBox.setValue("UI change resumed", true);
+    assertEquals("Model not properly updated", "UI change resumed", model.getValue());
+    model.setValue("model change resumed");
+    assertEquals("Widget not properly updated", "model change resumed", textBox.getText());
+  }
+  
+  @Test
+  public void testPauseResumeWithSetModel() {
+    final TextBox textBox = new TextBox();
+
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class).bind(textBox, "value");
+    final TestModel model = binder.getModel();
+    
+    binder.pause();
+    assertSame("Pause should not change model instance", model, binder.getModel());
+    
+    textBox.setValue("UI change paused", true);
+    assertEquals("Model should not have been updated", null, model.getValue());
+    model.setValue("model change paused");
+    assertEquals("Widget should not have been updated", "UI change paused", textBox.getText());
+    
+    // Resume using setModel
+    final TestModel model2 = binder.setModel(new TestModel("model update"));
+    assertEquals("Widget not properly updated", "model update", textBox.getText());
+    assertEquals("Model should not have been updated", "model update", model2.getValue());
+    
+    textBox.setValue("UI change resumed", true);
+    assertEquals("Model not properly updated", "UI change resumed", model2.getValue());
+    model2.setValue("model change resumed");
+    assertEquals("Widget not properly updated", "model change resumed", textBox.getText());
+    
+    // Explicit resume should have no effect after resuming with setModel
+    binder.resume(StateSync.FROM_MODEL);
+    
+    textBox.setValue("UI change resumed", true);
+    assertEquals("Model not properly updated", "UI change resumed", model2.getValue());
+    model2.setValue("model change resumed");
+    assertEquals("Widget not properly updated", "model change resumed", textBox.getText());
+  }
+  
+  @Test
+  public void testResumeWithoutPauseDoesntThrowException() {
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class).bind(new TextBox(), "value");
+    binder.resume(StateSync.FROM_MODEL);
+  }
+  
+  @Test
+  public void testPausingMultipeTimes() {
+    final TextBox textBox = new TextBox();
+
+    final DataBinder<TestModel> binder = DataBinder.forType(TestModel.class).bind(textBox, "value");
+    final TestModel model = binder.getModel();
+    
+    binder.pause();
+    binder.pause();
+    assertSame("Pause should not change model instance", model, binder.getModel());
+  }
+  
+  @Test
+  public void testBindingUsingFqcn() {
+    final TextBox textBox = new TextBox();
+    final String fqcn = TestModel.class.getName();
+    
+    final BindableProxy<?> model = BindableProxyFactory.getBindableProxy(fqcn);
+    DataBinder.forModel(model).bind(textBox, "value");
+    
+    textBox.setValue("UI change", true);
+    assertEquals("Model not properly updated", "UI change", model.get("value"));
+
+    model.set("value", "model change");
+    model.updateWidgets();
+    assertEquals("Widget not properly updated", "model change", textBox.getText());
   }
 }

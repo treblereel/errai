@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.ui.test.i18n.client;
 
 import org.jboss.errai.enterprise.client.cdi.AbstractErraiCDITest;
@@ -9,8 +25,6 @@ import org.jboss.errai.ui.shared.api.Locale;
 import org.junit.Test;
 
 public class I18nTemplateTest extends AbstractErraiCDITest {
-
-  private I18nTemplateTestApp app;
 
   /**
    * @see com.google.gwt.junit.client.GWTTestCase#getModuleName()
@@ -24,14 +38,29 @@ public class I18nTemplateTest extends AbstractErraiCDITest {
   protected void gwtSetUp() throws Exception {
     super.gwtSetUp();
     TranslationService.setCurrentLocale("en");
-    app = IOC.getBeanManager().lookupBean(I18nTemplateTestApp.class).getInstance();
   }
 
   /**
    * Tests that the bundle is created and is accessible.
    */
   @Test
-  public void testBundleAccess() {
+  public void testBundleAccessWithCompositeComponent() {
+    final I18nTemplateTestApp app = IOC.getBeanManager().lookupBean(CompositeI18nTemplateTestApp.class).getInstance();
+    bundleAccessAssertions(app);
+    IOC.getBeanManager().destroyBean(app);
+  }
+
+  /**
+   * Tests that the bundle is created and is accessible.
+   */
+  @Test
+  public void testBundleAccessWithNonCompositeComponent() {
+    final I18nTemplateTestApp app = IOC.getBeanManager().lookupBean(NonCompositeI18nTemplateTestApp.class).getInstance();
+    bundleAccessAssertions(app);
+    IOC.getBeanManager().destroyBean(app);
+  }
+
+  private void bundleAccessAssertions(final I18nTemplateTestApp app) {
     assertNotNull(app.getComponent());
     assertEquals("Welcome to the errai-ui i18n demo.", app.getComponent().getWelcome_p().getInnerText());
     assertEquals("Label 1:", app.getComponent().getLabel1().getText());
@@ -49,11 +78,23 @@ public class I18nTemplateTest extends AbstractErraiCDITest {
     assertEquals("Enter your email address...", app.getComponent().getEmail().getElement().getAttribute("placeholder"));
     assertEquals("Password:", app.getComponent().getPasswordLabel().getText());
     assertEquals("Your password goes here.", app.getComponent().getPassword().getElement().getAttribute("title"));
-
   }
 
   @Test
-  public void testShouldCreateLocaleListBoxContainingAllLanguageOptions() {
+  public void testShouldCreateLocaleListBoxContainingAllLanguageOptionsWithCompositeTemplate() {
+    final I18nTemplateTestApp app = IOC.getBeanManager().lookupBean(CompositeI18nTemplateTestApp.class).getInstance();
+    localeListBoxAssertions(app);
+    IOC.getBeanManager().destroyBean(app);
+  }
+
+  @Test
+  public void testShouldCreateLocaleListBoxContainingAllLanguageOptionsWithNonCompositeTemplate() {
+    final I18nTemplateTestApp app = IOC.getBeanManager().lookupBean(NonCompositeI18nTemplateTestApp.class).getInstance();
+    localeListBoxAssertions(app);
+    IOC.getBeanManager().destroyBean(app);
+  }
+
+  private void localeListBoxAssertions(final I18nTemplateTestApp app) {
     // given
     LocaleSelector selector = IOC.getBeanManager().lookupBean(LocaleSelector.class).getInstance();
     LocaleListBox localeListBox = app.getComponent().getListBox();
@@ -61,7 +102,7 @@ public class I18nTemplateTest extends AbstractErraiCDITest {
 
     // when - then
     assertNull(localeListBox.getValue());
-    assertEquals(4, selector.getSupportedLocales().size());
+    assertEquals(5, selector.getSupportedLocales().size());
 
     localeListBox.setValue(new Locale("da", "Danish"), true);
 

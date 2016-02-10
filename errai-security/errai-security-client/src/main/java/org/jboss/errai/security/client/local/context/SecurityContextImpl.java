@@ -1,19 +1,19 @@
-/**
- * JBoss, Home of Professional Open Source
- * Copyright 2014, Red Hat, Inc. and/or its affiliates, and individual
- * contributors by the @authors tag. See the copyright.txt in the
- * distribution for a full listing of individual contributors.
+/*
+ * Copyright (C) 2014 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.security.client.local.context;
 
 import javax.annotation.PostConstruct;
@@ -48,7 +48,6 @@ import org.slf4j.Logger;
 
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMultimap;
-import com.google.gwt.user.client.ui.IsWidget;
 import com.google.gwt.user.client.ui.SimplePanel;
 
 /**
@@ -89,7 +88,7 @@ public class SecurityContextImpl implements SecurityContext {
   @Inject
   private Caller<NonCachingUserService> userServiceCaller;
 
-  private Class<? extends IsWidget> lastPageCache;
+  private Class<?> lastPageCache;
 
   @PostConstruct
   private void setup() {
@@ -135,7 +134,7 @@ public class SecurityContextImpl implements SecurityContext {
     redirectToLoginPage(getCurrentPage());
   }
 
-  private Class<? extends IsWidget> getCurrentPage() {
+  private Class<?> getCurrentPage() {
     if (navigation.getCurrentPage() != null) {
       return navigation.getCurrentPage().contentType();
     }
@@ -146,7 +145,7 @@ public class SecurityContextImpl implements SecurityContext {
   }
 
   @Override
-  public void redirectToLoginPage(final Class<? extends IsWidget> fromPage) {
+  public void redirectToLoginPage(final Class<?> fromPage) {
     lastPageCache = fromPage;
     navigation.goToWithRole(LoginPage.class);
   }
@@ -157,7 +156,7 @@ public class SecurityContextImpl implements SecurityContext {
   }
 
   @Override
-  public void redirectToSecurityErrorPage(final Class<? extends IsWidget> fromPage) {
+  public void redirectToSecurityErrorPage(final Class<?> fromPage) {
     lastPageCache = fromPage;
     navigation.goToWithRole(SecurityError.class);
   }
@@ -184,7 +183,7 @@ public class SecurityContextImpl implements SecurityContext {
   }
 
   @Override
-  public void navigateBackOrToPage(final Class<? extends IsWidget> pageType) {
+  public void navigateBackOrToPage(final Class<?> pageType) {
     if (lastPageCache != null) {
       navigation.goTo(lastPageCache, ImmutableMultimap.<String, String>of());
       lastPageCache = null;
@@ -197,7 +196,7 @@ public class SecurityContextImpl implements SecurityContext {
   @Override
   public void navigateBackOrHome() {
     // Guaranteed to exist at compile-time.
-    final PageNode<? extends IsWidget> defaultPageNode = navigation.getPagesByRole(DefaultPage.class).iterator().next();
+    final PageNode<?> defaultPageNode = navigation.getPagesByRole(DefaultPage.class).iterator().next();
     navigateBackOrToPage(defaultPageNode.contentType());
   }
 
