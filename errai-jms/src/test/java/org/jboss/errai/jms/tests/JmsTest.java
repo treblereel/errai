@@ -46,6 +46,7 @@ public abstract class JmsTest {
         final WebArchive war = ShrinkWrap.create(WebArchive.class, WAR_FILE_NAME);
         war.addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
                 .setWebXML(new File("src/test/webapp", "WEB-INF/web.xml"))
+                .addAsWebInfResource(new File("src/test/webapp/WEB-INF","log4j.properties"), "classes/log4j.properties")
                 .addAsWebInfResource(new File("src/main/resources", "ErraiApp.properties"), "classes/ErraiApp.properties")
                 .addAsWebInfResource(new File("src/main/resources", "ErraiService.properties"), "classes/ErraiService.properties")
 

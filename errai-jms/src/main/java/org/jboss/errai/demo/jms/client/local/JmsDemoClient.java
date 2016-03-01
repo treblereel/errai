@@ -9,6 +9,7 @@ import org.jboss.errai.ioc.client.api.EntryPoint;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HorizontalPanel;
@@ -34,6 +35,7 @@ public class JmsDemoClient extends Composite {
   private Label label = new Label();
   
   public JmsDemoClient() {
+    label.setVisible(false);
     layoutVerticalPanel.add(buttonVerticalPanel);
     layoutVerticalPanel.add(messageVerticalPanel);
     messageVerticalPanel.add(label);
@@ -62,7 +64,6 @@ public class JmsDemoClient extends Composite {
   public void showIncomeMessage(String message) {
     label.setText(message);
     label.setVisible(true);
-
   }
 
 }

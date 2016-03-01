@@ -67,8 +67,8 @@ public class JMSService {
     javax.jms.JMSProducer jMSProducer = context.createProducer();
     jMSProducer.setProperty("boolean", false);
     jMSProducer.setProperty("string", "string");
-    jMSProducer.send(topic, "Topic " + new Date().toString());
-    logger.info(" sendTextMessangeTopic " + new Date());
+    jMSProducer.send(topic, "The sky above the port was the color of television, tuned to a dead channel");
+    logger.info(" sendTextMessangeTopic: The sky above the port was the color of television, tuned to a dead channel");
   }
 
   public void sendObjectMessageQueue() {
@@ -77,7 +77,7 @@ public class JMSService {
     jMSProducer.setProperty("string", "string");
     ObjectMessage message = context.createObjectMessage(new User("Bilbo Baggins", new Date(), true));
     jMSProducer.send(queue, message);
-    logger.info(" sendObjectMessageQueue " + new Date());
+    logger.info(" sendObjectMessageQueue ");
   }
 
   public void sendByteMessageQueue() {
@@ -85,7 +85,7 @@ public class JMSService {
     jMSProducer.setProperty("boolean", false);
     jMSProducer.setProperty("string", "string");
     jMSProducer.send(queue, bytes);
-    logger.info(" sendByteMessageQueue " + new Date());
+    logger.info(" sendByteMessageQueue ");
   }
 
   public void sendMapMessageQueue() {
@@ -98,6 +98,6 @@ public class JMSService {
     jMSProducer.setProperty("boolean", false);
     jMSProducer.setProperty("string", "string");
     jMSProducer.send(queue, map);
-    logger.info(" sendMapMessageQueue " + new Date());
+    logger.info(" sendMapMessageQueue ");
   }
 }

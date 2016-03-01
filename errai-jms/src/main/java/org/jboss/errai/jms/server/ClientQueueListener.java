@@ -14,6 +14,7 @@ import javax.ejb.Startup;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jboss.errai.bus.client.api.SubscribeListener;
 import org.jboss.errai.bus.client.api.UnsubscribeListener;
 import org.jboss.errai.bus.client.api.messaging.MessageBus;
@@ -31,109 +32,113 @@ import org.slf4j.LoggerFactory;
 @Singleton
 @Named("ClientQueueListener")
 public class ClientQueueListener {
-  private Logger logger = LoggerFactory.getLogger(this.getClass());
+	private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-  
-  class QueueClients {
-    private Iterator<String> iterator;
-    private Queue<String> sessions = new ConcurrentLinkedQueue<String>();
+	@Inject
+	private MessageBus messageBus;
 
-    QueueClients() {
-      iterator = sessions.iterator();
-    }
+	class QueueClients {
+		private Iterator<String> iterator;
+		private Queue<String> sessions = new ConcurrentLinkedQueue<String>();
 
-    /**
-     * Add Queue client Session to pull
-     * 
-     * @param session
-     */
-    @Lock(LockType.READ)
-    public void add(String session) {
-      sessions.add(session);
-    }
+		QueueClients() {
+			iterator = sessions.iterator();
+		}
 
-    /**
-     * Obtain next Session
-     * 
-     * @return String as session id
-     */
-    @Lock(LockType.WRITE)
-    public String next() {
-      if (sessions.size() != 0) {
-        if (!iterator.hasNext()) {
-          iterator = sessions.iterator();
-        }
+		/**
+		 * Add Queue client Session to pull
+		 * 
+		 * @param session
+		 */
+		@Lock(LockType.WRITE)
+		public void add(String session) {
+			sessions.add(session);
+		}
 
-        String robin = iterator.next();
-        return robin;
-      }
-      return "";
-    }
+		/**
+		 * Obtain next Session
+		 * 
+		 * @return String as session id
+		 */
+		@Lock(LockType.WRITE)
+		public String next() {
+			if (sessions.size() != 0) {
+				if (!iterator.hasNext()) {
+					iterator = sessions.iterator();
+				}
 
-    /**
-     * Remove Queue client Session to pull return true if last element
-     * 
-     * @param session
-     * @return
-     */
-    @Lock(LockType.WRITE)
-    public Boolean remove(String session) {
-      sessions.remove(session);
-      if (sessions.size() == 0) {
-        return true;
-      }
-      else {
-        return false;
-      }
-    }
-  }
+				String robin = iterator.next();
+				return robin;
+			}
+			return "";
+		}
 
-  private Map<String, QueueClients> cache = new HashMap<String, QueueClients>();
+		/**
+		 * Remove Queue client Session to pull return true if last element
+		 * 
+		 * @param session
+		 * @return
+		 */
+		@Lock(LockType.WRITE)
+		public Boolean remove(String session) {
+			sessions.remove(session);
+			if (sessions.size() == 0) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
 
-  @Inject
-  private MessageBus messageBus;
+	private Map<String, QueueClients> cache = new HashMap<String, QueueClients>();
 
-  public ClientQueueListener() {
+	public ClientQueueListener() {
 
-  }
+	}
 
-  @PostConstruct
-  private void init() {
-    messageBus.addSubscribeListener(new SubscribeListener() {
-      @Override
-      public void onSubscribe(SubscriptionEvent event) {
-        logger.debug("SubscriptionEvent " + event.getSubject() + " " + event.getSessionId());
-        if (cache.containsKey(event.getSubject())) {
-          cache.get(event.getSubject()).add(event.getSessionId());
-        }
-      }
-    });
-    
-    messageBus.addUnsubscribeListener(new UnsubscribeListener() {
-      @Override
-      public void onUnsubscribe(SubscriptionEvent event) {
-        logger.debug("UnsubscriptionEvent " + event.getSubject() + " " + event.getSessionId());
-        if (cache.containsKey(event.getSubject())) {
-          if (cache.get(event.getSubject()).remove(event.getSessionId()))
-            ;
-        }
-      }
-    });
-  }
+	@PostConstruct
+	private void init() {
+		messageBus.addSubscribeListener(new SubscribeListener() {
+			@Override
+			public void onSubscribe(SubscriptionEvent event) {
+				if (StringUtils.isNotBlank(event.getSubject())
+						&& StringUtils.isNotBlank(event.getSessionId())) {
+					if (cache.containsKey(event.getSubject())) {
+						logger.debug("SubscriptionEvent " + event.getSubject()
+								+ " " + event.getSessionId());
+						cache.get(event.getSubject()).add(event.getSessionId());
+					}
+				}
+			}
+		});
 
-  /**
-   * Obtain next SessionId
-   * 
-   * @return String as session id
-   */
-  public String next(String messageDrivenBeanName) {
-    if (cache.containsKey(messageDrivenBeanName))
-      return cache.get(messageDrivenBeanName).next();
-    return "";
-  }
+		messageBus.addUnsubscribeListener(new UnsubscribeListener() {
+			@Override
+			public void onUnsubscribe(SubscriptionEvent event) {
+				if (cache.containsKey(event.getSubject())) {
+					logger.debug("UnsubscriptionEvent " + event.getSubject()
+							+ " " + event.getSessionId());
+					if (cache.get(event.getSubject()).remove(
+							event.getSessionId()))
+						;
+				}
+			}
+		});
+	}
 
-  public void subscribe(String queue) {
-    if (!cache.containsKey(queue))
-      cache.put(queue, new QueueClients());
-  }
+	/**
+	 * Obtain next SessionId
+	 * 
+	 * @return String as session id
+	 */
+	public String next(String messageDrivenBeanName) {
+		if (cache.containsKey(messageDrivenBeanName))
+			return cache.get(messageDrivenBeanName).next();
+		return "";
+	}
+
+	public void subscribe(String queue) {
+		if (!cache.containsKey(queue))
+			cache.put(queue, new QueueClients());
+	}
 }

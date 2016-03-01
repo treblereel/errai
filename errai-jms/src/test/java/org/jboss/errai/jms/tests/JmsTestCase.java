@@ -1,6 +1,5 @@
 package org.jboss.errai.jms.tests;
 
-import org.eclipse.jdt.core.dom.ThisExpression;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.graphene.Graphene;
 import org.jboss.arquillian.junit.InSequence;
@@ -9,6 +8,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
+
+import static org.jboss.arquillian.graphene.Graphene.*;
+
 
 public class JmsTestCase extends JmsTest {
 
@@ -44,15 +46,10 @@ public class JmsTestCase extends JmsTest {
     @InSequence(1)
     public void testSendTextMessageQueue() {
         open();
-        Graphene.waitModel().until().element(sendTextMessageQueueButton).is().visible();
-        Graphene.guardAjax(sendTextMessageQueueButton).click();
-        Graphene.waitModel().until().element(label).is().visible();
-        
-        logger.warn( label.getText());        
-
-        
+        waitModel().until().element(sendTextMessageQueueButton).is().present();
+        sendTextMessageQueueButton.click();
+        waitModel().until().element(label).is().visible();
         Assert.assertTrue("TextMessageQueue", label.getText().equals("This is an example"));
-
     }
     
     @Test
@@ -61,13 +58,9 @@ public class JmsTestCase extends JmsTest {
     public void testSendTextMessageTopic() {
         open();
         Graphene.waitModel().until().element(sendTextMessageTopicButton).is().visible();
-        Graphene.guardAjax(sendTextMessageTopicButton).click();
-        Graphene.waitModel().until().element(label).is().visible();
-        
+        sendTextMessageTopicButton.click();
         Graphene.waitModel().until().element(label).is().not().equals("");
-        
-        logger.warn( label.getText());        
-        Assert.assertTrue("TextMessageTopic", label.getText().equals("Topic Fri Feb 26 18:04:05 CET 2016"));
+        Assert.assertTrue("TextMessageTopic", label.getText().equals("The sky above the port was the color of television, tuned to a dead channel"));
     }
     
     @Test
@@ -76,13 +69,10 @@ public class JmsTestCase extends JmsTest {
     public void testSendObjectMessageQueue() {
         open();
         Graphene.waitModel().until().element(sendObjectMessageQueueButton).is().visible();
-        Graphene.guardAjax(sendObjectMessageQueueButton).click();
+        sendObjectMessageQueueButton.click();
         Graphene.waitModel().until().element(label).is().visible();
-        
-        logger.warn( label.getText());        
+        Assert.assertTrue("ObjectMessageQueue", label.getText().equals("name :Bilbo Baggins alive :true"));
 
-        
-        Assert.assertTrue("ObjectMessageQueue", label.getText().equals("name :Bilbo Baggins age : Fri Feb 26 18:08:28 GMT+100 2016 alive :true"));
     }
     
     @Test
@@ -91,12 +81,8 @@ public class JmsTestCase extends JmsTest {
     public void testSendByteMessageQueue() {
         open();
         Graphene.waitModel().until().element(sendByteMessageQueueButton).is().visible();
-        Graphene.guardAjax(sendByteMessageQueueButton).click();
+        sendByteMessageQueueButton.click();
         Graphene.waitModel().until().element(label).is().visible();
-        
-        logger.warn( label.getText());        
-
-        
         Assert.assertTrue("ByteMessageQueue", label.getText().equals("841041051153210511532971103210112097109112108101"));
     }
     
@@ -106,12 +92,9 @@ public class JmsTestCase extends JmsTest {
     public void testSendMapMessageQueue() {
         open();
         Graphene.waitModel().until().element(sendMapMessageQueueButton).is().visible();
-        Graphene.guardAjax(sendMapMessageQueueButton).click();
+        sendMapMessageQueueButton.click();
         Graphene.waitModel().until().element(label).is().visible();
-        
         logger.warn( label.getText());        
-
-        
         Assert.assertTrue("MapMessageQueue", label.getText().equals("param : true: param : you shall not pass: param : Gandalf the Grey:"));
     }
 

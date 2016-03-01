@@ -37,6 +37,13 @@
 
 	<dependencyManagement>
 		<dependencies>
+	<!-- 		<dependency>
+				<groupId>org.jboss.errai.bom</groupId>
+				<artifactId>errai-bom</artifactId>
+				<version>${project.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency> -->
 			<!-- Arquillian Core dependencies -->
 			<dependency>
 				<groupId>org.jboss.arquillian</groupId>
@@ -97,6 +104,16 @@
 			<groupId>org.jboss.logging</groupId>
 			<artifactId>jboss-logging</artifactId>
 			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jboss.errai</groupId>
+			<artifactId>errai-jboss-as-support</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jboss.errai</groupId>
+			<artifactId>errai-javaee-all</artifactId>
 		</dependency>
 
 		<dependency>
@@ -170,11 +187,38 @@
 			<type>pom</type>
 			<scope>test</scope>
 		</dependency>
+		<!-- Logs -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
 
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+
+						<configuration>
+							<excludes>
+								<exclude>org/jboss/errai/demo/**</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
@@ -193,26 +237,6 @@
 							<includes>
 								<include>**/**/**/*TestCase.java</include>
 							</includes>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>second-jar</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-						<configuration>
-							<excludes>
-								<exclude>**/org/jboss/errai/demo/**</exclude>
-							</excludes>
-							<descriptorRefs>
-								<descriptorRef>jar-with-dependencies</descriptorRef>
-							</descriptorRefs>
 						</configuration>
 					</execution>
 				</executions>
@@ -252,26 +276,6 @@
 			</dependencies>
 			<build>
 				<plugins>
-				<!--  	<plugin>
-						<groupId>org.apache.maven.plugins</groupId>
-						<artifactId>maven-jar-plugin</artifactId>
-						<executions>
-							<execution>
-								<id>second-jar</id>
-								<goals>
-									<goal>package</goal>
-								</goals>
-								<configuration>
-									<excludes>
-										<exclude>**/org/jboss/errai/demo/**</exclude>
-									</excludes>
-									<descriptorRefs>
-										<descriptorRef>jar-with-dependencies</descriptorRef>
-									</descriptorRefs>
-								</configuration>
-							</execution>
-						</executions>
-					</plugin> -->
 					<plugin>
 						<groupId>org.codehaus.mojo</groupId>
 						<artifactId>gwt-maven-plugin</artifactId>
