@@ -1,10 +1,14 @@
 package org.jboss.errai.jms.tests;
 
+import java.util.concurrent.TimeUnit;
+
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.graphene.Graphene;
 import org.jboss.arquillian.junit.InSequence;
 import org.jboss.logging.Logger;
 import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -48,7 +52,8 @@ public class JmsTestCase extends JmsTest {
         open();
         waitModel().until().element(sendTextMessageQueueButton).is().present();
         sendTextMessageQueueButton.click();
-        waitModel().until().element(label).is().visible();
+        waitModel().withTimeout(1, TimeUnit.SECONDS);
+        //waitModel().until().element(label).is().present();
         Assert.assertTrue("TextMessageQueue", label.getText().equals("This is an example"));
     }
     
@@ -57,9 +62,8 @@ public class JmsTestCase extends JmsTest {
     @InSequence(2)
     public void testSendTextMessageTopic() {
         open();
-        Graphene.waitModel().until().element(sendTextMessageTopicButton).is().visible();
         sendTextMessageTopicButton.click();
-        Graphene.waitModel().until().element(label).is().not().equals("");
+        waitModel().withTimeout(1, TimeUnit.SECONDS);
         Assert.assertTrue("TextMessageTopic", label.getText().equals("The sky above the port was the color of television, tuned to a dead channel"));
     }
     
@@ -68,9 +72,8 @@ public class JmsTestCase extends JmsTest {
     @InSequence(3)
     public void testSendObjectMessageQueue() {
         open();
-        Graphene.waitModel().until().element(sendObjectMessageQueueButton).is().visible();
         sendObjectMessageQueueButton.click();
-        Graphene.waitModel().until().element(label).is().visible();
+        waitModel().withTimeout(1, TimeUnit.SECONDS);
         Assert.assertTrue("ObjectMessageQueue", label.getText().equals("name :Bilbo Baggins alive :true"));
 
     }
@@ -80,9 +83,8 @@ public class JmsTestCase extends JmsTest {
     @InSequence(4)
     public void testSendByteMessageQueue() {
         open();
-        Graphene.waitModel().until().element(sendByteMessageQueueButton).is().visible();
         sendByteMessageQueueButton.click();
-        Graphene.waitModel().until().element(label).is().visible();
+        waitModel().withTimeout(1, TimeUnit.SECONDS);
         Assert.assertTrue("ByteMessageQueue", label.getText().equals("841041051153210511532971103210112097109112108101"));
     }
     
@@ -91,10 +93,8 @@ public class JmsTestCase extends JmsTest {
     @InSequence(5)
     public void testSendMapMessageQueue() {
         open();
-        Graphene.waitModel().until().element(sendMapMessageQueueButton).is().visible();
         sendMapMessageQueueButton.click();
-        Graphene.waitModel().until().element(label).is().visible();
-        logger.warn( label.getText());        
+        waitModel().withTimeout(1, TimeUnit.SECONDS);
         Assert.assertTrue("MapMessageQueue", label.getText().equals("param : true: param : you shall not pass: param : Gandalf the Grey:"));
     }
 

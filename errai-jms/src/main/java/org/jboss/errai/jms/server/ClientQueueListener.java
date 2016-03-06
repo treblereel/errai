@@ -139,6 +139,7 @@ public class ClientQueueListener {
 
 	public void subscribe(String queue) {
 		if (!cache.containsKey(queue))
+			logger.debug("subscribe to queue: " +queue);
 			cache.put(queue, new QueueClients());
 	}
 }

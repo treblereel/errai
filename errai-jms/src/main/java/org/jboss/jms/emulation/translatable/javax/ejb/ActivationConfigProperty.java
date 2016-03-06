@@ -13,9 +13,8 @@ import java.lang.annotation.Target;
  */
 @Retention(RUNTIME)
 @Target({})
-public @interface ActivationConfigProperty
-{
-   String propertyName();
+public @interface ActivationConfigProperty {
+    String propertyName();
 
-   String propertyValue();
+    String propertyValue();
 }

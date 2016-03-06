@@ -6,17 +6,16 @@ import javax.inject.Inject;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 
-
 /**
  * 
  * @author Dmitrii Tikhomirov
  */
 
-@MessageDriven(name = "HelloWorldQueueMDB", activationConfig = {
-    @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "queue/HelloWorldQueueMDB"),
+@MessageDriven(name = "HelloWorldQueueMDB2", activationConfig = {
+    @ActivationConfigProperty(propertyName = "destinationLookup", propertyValue = "queue/HelloWorldQueueMDB2"),
     @ActivationConfigProperty(propertyName = "destinationType", propertyValue = "javax.jms.Queue"),
     @ActivationConfigProperty(propertyName = "acknowledgeMode", propertyValue = "Auto-acknowledge")})
-public class JmsDemoMDBQueue implements MessageListener {
+public class JmsDemoMDB2Queue implements MessageListener {
 
   @Inject
   private JmsDemoClient jmsDemoClient;

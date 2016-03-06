@@ -12,19 +12,19 @@ import org.jboss.errai.bus.client.api.messaging.MessageCallback;
 @Singleton
 @Startup
 public class CommandService {
-  
+
   @Inject
-  private JMSService jMSService;
-  
+  private JmsService jmsService;
+
   @Inject
   private MessageBus bus;
-  
+
   @PostConstruct
-  private void init(){
+  private void init() {
     bus.subscribe("sendMeMessage", new MessageCallback() {
       public void callback(Message message) {
           String messageType = message.getValue(String.class);
-          jMSService.send(messageType);
+          jmsService.send(messageType);
       }
     });
   }

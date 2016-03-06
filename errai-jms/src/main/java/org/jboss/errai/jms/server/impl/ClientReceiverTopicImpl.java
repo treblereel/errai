@@ -21,20 +21,20 @@ import org.jboss.errai.jms.util.ErraiJMSMDBUtil;
 @Named("Topic")
 public class ClientReceiverTopicImpl implements ClientReceiver {
 
-  @Inject
-  private MessageBus messageBus;
+    @Inject
+    private MessageBus messageBus;
 
-  public ClientReceiverTopicImpl() {
+    public ClientReceiverTopicImpl() {
 
-  }
+    }
 
-  /**
-   * Send message to Errai Bus
-   * 
-   */ 
-  @Override
-  public void processToMessageBus(Message message) throws JMSException {
-    ErraiJMSMDBUtil.toMessageBusMessage(message).getMessage().sendNowWith(messageBus);
-  }
+    /**
+     * Send message to Errai Bus
+     * 
+     */
+    @Override
+    public void processToMessageBus(Message message) throws JMSException {
+        ErraiJMSMDBUtil.toMessageBusMessage(message).getMessage().sendNowWith(messageBus);
+    }
 
 }

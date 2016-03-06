@@ -21,89 +21,69 @@ import org.jboss.errai.jms.client.local.MessageDrivenBeanReceiver;
  */
 
 @CodeDecorator
-public class MessageDrivenBeanDecorator extends
-		IOCDecoratorExtension<MessageDriven> {
+public class MessageDrivenBeanDecorator extends IOCDecoratorExtension<MessageDriven> {
 
-	public MessageDrivenBeanDecorator(Class<MessageDriven> decoratesWith) {
-		super(decoratesWith);
-	}
+    public MessageDrivenBeanDecorator(Class<MessageDriven> decoratesWith) {
+        super(decoratesWith);
+    }
 
-	@Override
-	public void generateDecorator(Decorable decorable,
-			FactoryController controller) {
-		if (decorable.getDecorableDeclaringType().isAnnotationPresent(
-				MessageDriven.class)) {
-			MessageDrivenBeanConfiguration config = new MessageDrivenBeanConfiguration(
-					decorable);
-			generate(decorable, controller, config);
-		}
-	}
+    @Override
+    public void generateDecorator(Decorable decorable, FactoryController controller) {
+        if (decorable.getDecorableDeclaringType().isAnnotationPresent(MessageDriven.class)) {
+            MessageDrivenBeanConfiguration config = new MessageDrivenBeanConfiguration(decorable);
+            generate(decorable, controller, config);
+        }
+    }
 
-	/**
-	 * Construct server and client MDBeans
-	 * 
-	 * @param decorable
-	 * @param controller
-	 * @param config
-	 */
-	private void generate(Decorable decorable, FactoryController controller,
-			MessageDrivenBeanConfiguration config) {
-		try {
-			generateClientSideCode(decorable, controller, config);
-			generateServerSideCode(decorable, config);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
+    /**
+     * Construct server and client MDBeans
+     * 
+     * @param decorable
+     * @param controller
+     * @param config
+     */
+    private void generate(Decorable decorable, FactoryController controller, MessageDrivenBeanConfiguration config) {
+        try {
+            generateClientSideCode(decorable, controller, config);
+            generateServerSideCode(decorable, config);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	/**
-	 * Creates and configure an instance of MessageDrivenBeanReceiver to became
-	 * a bridge between server MDBean and client MDBean.
-	 * 
-	 * @param decorable
-	 * @param controller
-	 * @param config
-	 *            current MDBean configuration
-	 */
-	private void generateClientSideCode(Decorable decorable,
-			FactoryController controller, MessageDrivenBeanConfiguration config) {
+    /**
+     * Creates and configure an instance of MessageDrivenBeanReceiver to became a bridge between server MDBean and client
+     * MDBean.
+     * 
+     * @param decorable
+     * @param controller
+     * @param config current MDBean configuration
+     */
+    private void generateClientSideCode(Decorable decorable, FactoryController controller, MessageDrivenBeanConfiguration config) {
 
-		final Statement callbackStmt = Stmt
-				.newObject(Runnable.class)
-				.extend()
-				.publicOverridesMethod("run")
-				.append(Stmt
-						.declareFinalVariable(
-								"temp",
-								MessageDrivenBeanReceiver.class,
-								Stmt.create(Context.create().autoImport())
-										.nestedCall(
-												Stmt.newObject(MessageDrivenBeanReceiver.class))))
-				.append(Stmt.loadVariable("temp").invoke(
-						"setDestinationLookup", config.getDestinationLookup()))
-				.append(Stmt.loadVariable("temp").invoke("setDestinationType",
-						config.getDestinationType()))
-				.append(Stmt.loadVariable("temp").invoke("setAcknowledgeMode",
-						config.getAcknowledgeMode()))
-				.append(Stmt.loadVariable("temp").invoke("setName",
-						config.getMappedName()))
-				.append(Stmt.loadVariable("temp").invoke("setMessageListener",
-						Stmt.loadVariable(Refs.get("instance"))))
-				.append(Stmt.loadVariable("temp").invoke("finish")).finish()
-				.finish();
+        final Statement callbackStmt = Stmt
+                .newObject(Runnable.class)
+                .extend()
+                .publicOverridesMethod("run")
+                .append(Stmt.declareFinalVariable("temp", MessageDrivenBeanReceiver.class,
+                        Stmt.create(Context.create().autoImport()).nestedCall(Stmt.newObject(MessageDrivenBeanReceiver.class))))
+                .append(Stmt.loadVariable("temp").invoke("setDestinationLookup", config.getDestinationLookup()))
+                .append(Stmt.loadVariable("temp").invoke("setDestinationType", config.getDestinationType()))
+                .append(Stmt.loadVariable("temp").invoke("setAcknowledgeMode", config.getAcknowledgeMode()))
+                .append(Stmt.loadVariable("temp").invoke("setName", config.getMappedName()))
+                .append(Stmt.loadVariable("temp").invoke("setMessageListener", Stmt.loadVariable(Refs.get("instance"))))
+                .append(Stmt.loadVariable("temp").invoke("finish")).finish().finish();
 
-		controller.addInitializationStatements(Collections
-				.<Statement> singletonList(Stmt.invokeStatic(InitVotes.class,
-						"registerOneTimeInitCallback", callbackStmt)));
-	}
+        controller.addInitializationStatements(Collections.<Statement> singletonList(Stmt.invokeStatic(InitVotes.class,
+                "registerOneTimeInitCallback", callbackStmt)));
+    }
 
-	/*
-	 * Generate server side MDBean's
-	 */
-	private void generateServerSideCode(Decorable decorable,
-			MessageDrivenBeanConfiguration config) {
-		new MessageDrivenBeanReceiverGenerator(decorable, config);
-		if (config.getDestinationType().equals("javax.jms.Queue"))
-			new MessageDrivenBeanActivatorGenerator(decorable, config);
-	}
+    /*
+     * Generate server side MDBean's
+     */
+    private void generateServerSideCode(Decorable decorable, MessageDrivenBeanConfiguration config) {
+        new MessageDrivenBeanReceiverGenerator(decorable, config);
+        if (config.getDestinationType().equals("javax.jms.Queue"))
+            new MessageDrivenBeanActivatorGenerator(decorable, config);
+    }
 }

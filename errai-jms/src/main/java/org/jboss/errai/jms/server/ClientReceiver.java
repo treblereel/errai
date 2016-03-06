@@ -9,8 +9,8 @@ import javax.jms.Message;
  *
  */
 public interface ClientReceiver {
-  /**
-   * Send message to Errai Bus
-   */ 
-  public void processToMessageBus(Message message) throws JMSException;
+    /**
+     * Send message to Errai Bus
+     */
+    public void processToMessageBus(Message message) throws JMSException;
 }

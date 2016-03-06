@@ -7,7 +7,6 @@ import org.jboss.errai.ioc.rebind.ioc.extension.IOCExtensionConfigurator;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.InjectionContext;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.WiringElementType;
 
-
 /**
  * Used on generation stage, we want MDBeans to be singletons.
  * 
@@ -18,15 +17,12 @@ import org.jboss.errai.ioc.rebind.ioc.injector.api.WiringElementType;
 @IOCExtension
 public class MDBIOCExtensionConfigurator implements IOCExtensionConfigurator {
 
-  @Override
-  public void configure(IOCProcessingContext context,
-          InjectionContext injectionContext) {
-    injectionContext.mapElementType(WiringElementType.SingletonBean,
-            MessageDriven.class);
-  }
+    @Override
+    public void configure(IOCProcessingContext context, InjectionContext injectionContext) {
+        injectionContext.mapElementType(WiringElementType.SingletonBean, MessageDriven.class);
+    }
 
-  @Override
-  public void afterInitialization(IOCProcessingContext context,
-          InjectionContext injectionContext) {
-  }
+    @Override
+    public void afterInitialization(IOCProcessingContext context, InjectionContext injectionContext) {
+    }
 }
