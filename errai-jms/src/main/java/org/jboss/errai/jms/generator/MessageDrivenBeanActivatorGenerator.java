@@ -64,7 +64,6 @@ public class MessageDrivenBeanActivatorGenerator extends MessageDrivenBeanGenera
             addQueueRegistrator(jc);
 
             jCodeModel.build(new File(outputPath));
-
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
             compiler.run(null, null, null, classPath);
         } catch (JClassAlreadyExistsException e) {

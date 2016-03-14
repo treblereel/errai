@@ -37,13 +37,6 @@
 
 	<dependencyManagement>
 		<dependencies>
-	<!-- 		<dependency>
-				<groupId>org.jboss.errai.bom</groupId>
-				<artifactId>errai-bom</artifactId>
-				<version>${project.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency> -->
 			<!-- Arquillian Core dependencies -->
 			<dependency>
 				<groupId>org.jboss.arquillian</groupId>
@@ -206,14 +199,18 @@
 				<artifactId>maven-jar-plugin</artifactId>
 				<executions>
 					<execution>
-						<phase>package</phase>
+						<id>default-jar</id>
 						<goals>
 							<goal>jar</goal>
 						</goals>
-
+						<phase>package</phase>
 						<configuration>
+							<includes>
+								<include>**/*</include>
+							</includes>
 							<excludes>
 								<exclude>org/jboss/errai/demo/**</exclude>
+								<exclude>log4j.properties</exclude>
 							</excludes>
 						</configuration>
 					</execution>
@@ -246,7 +243,7 @@
 
 	<profiles>
 		<profile>
-			<id>integration_test</id>
+			<id>integration-test</id>
 			<dependencies>
 				<dependency>
 					<groupId>org.jboss.spec</groupId>

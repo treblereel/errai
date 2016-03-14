@@ -6,10 +6,13 @@ import org.jboss.errai.bus.client.api.base.MessageBuilder;
 import org.jboss.errai.bus.client.api.messaging.MessageBus;
 import org.jboss.errai.demo.jms.client.shared.Commands;
 import org.jboss.errai.ioc.client.api.EntryPoint;
+import org.slf4j.Logger;
+//import org.jboss.logging.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HorizontalPanel;
@@ -32,28 +35,27 @@ public class JmsDemoClient extends Composite {
   private VerticalPanel buttonVerticalPanel = new VerticalPanel();
   private VerticalPanel messageVerticalPanel = new VerticalPanel();
   private HorizontalPanel layoutVerticalPanel = new HorizontalPanel();
-  private Label label = new Label();
-  
+  private static Logger logger = LoggerFactory.getLogger(JmsDemoClient.class);
+
   public JmsDemoClient() {
-    label.setVisible(false);
     layoutVerticalPanel.add(buttonVerticalPanel);
     layoutVerticalPanel.add(messageVerticalPanel);
-    messageVerticalPanel.add(label);
-    label.getElement().setId("label");
-    
-    
+
     RootPanel.get().add(layoutVerticalPanel);
 
     for (final String command : Commands.listOf) {
+      Label l = new Label("");
+      l.setVisible(false);
+      l.getElement().setId(command + "Label");
+      messageVerticalPanel.add(l);
+
       buttonVerticalPanel.add(new Button(command) {
         {
           getElement().setId(command);
           addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {
-                label.setText("");  
-                label.setVisible(false);
-              MessageBuilder.createMessage().toSubject("sendMeMessage").signalling().withValue(command).noErrorHandling()
-                      .sendNowWith(bus);
+              MessageBuilder.createMessage().toSubject("sendMeMessage").signalling().withValue(command)
+                  .noErrorHandling().sendNowWith(bus);
             }
           });
         }
@@ -61,9 +63,12 @@ public class JmsDemoClient extends Composite {
     }
   }
 
-  public void showIncomeMessage(String message) {
-    label.setText(message);
-    label.setVisible(true);
+  public void showIncomeMessage(String message, String labelName) {
+    logger.warn(message + " " + labelName);
+
+    Label l = Label.wrap(DOM.getElementById(labelName + "Label"));
+    l.setText(message);
+    l.setVisible(true);
   }
 
 }

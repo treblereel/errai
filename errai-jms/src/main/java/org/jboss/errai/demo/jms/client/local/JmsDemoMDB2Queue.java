@@ -22,6 +22,5 @@ public class JmsDemoMDB2Queue implements MessageListener {
   
   @Override
   public void onMessage(Message message) {
-    jmsDemoClient.showIncomeMessage(Utils.extractStringFromMessage(message));
   }
 }

@@ -1,8 +1,10 @@
 package org.jboss.errai.demo.jms.client.local;
 
 import javax.ejb.ActivationConfigProperty;
+import javax.ejb.EJBException;
 import javax.ejb.MessageDriven;
 import javax.inject.Inject;
+import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
 
@@ -23,6 +25,10 @@ public class JmsDemoMDBQueue implements MessageListener {
   
   @Override
   public void onMessage(Message message) {
-    jmsDemoClient.showIncomeMessage(Utils.extractStringFromMessage(message));
+    try {
+        jmsDemoClient.showIncomeMessage(Utils.extractStringFromMessage(message),message.getStringProperty("forLabel"));
+    } catch (JMSException e) {
+        throw new EJBException(e.getMessage());
+    }
   }
 }
