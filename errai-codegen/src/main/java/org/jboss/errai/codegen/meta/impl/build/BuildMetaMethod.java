@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,12 @@
  */
 
 package org.jboss.errai.codegen.meta.impl.build;
+
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import org.jboss.errai.codegen.BlockStatement;
 import org.jboss.errai.codegen.Comment;
@@ -29,12 +35,12 @@ import org.jboss.errai.codegen.builder.Builder;
 import org.jboss.errai.codegen.builder.callstack.LoadClassReference;
 import org.jboss.errai.codegen.builder.impl.Scope;
 import org.jboss.errai.codegen.literal.AnnotationLiteral;
-import org.jboss.errai.codegen.meta.*;
-
-import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import org.jboss.errai.codegen.meta.MetaClass;
+import org.jboss.errai.codegen.meta.MetaClassMember;
+import org.jboss.errai.codegen.meta.MetaMethod;
+import org.jboss.errai.codegen.meta.MetaParameter;
+import org.jboss.errai.codegen.meta.MetaType;
+import org.jboss.errai.codegen.meta.MetaTypeVariable;
 
 /**
  * @author Mike Brock <cbrock@redhat.com>
@@ -45,7 +51,7 @@ public class BuildMetaMethod extends MetaMethod implements Builder {
   private BlockStatement body;
 
   private Scope scope;
-  private DefModifiers modifiers;
+  private final DefModifiers modifiers;
 
   private String name;
   private MetaClass returnType;
@@ -57,7 +63,7 @@ public class BuildMetaMethod extends MetaMethod implements Builder {
 
   private MetaMethod reifiedFormOf;
 
-  private List<Annotation> annotations = new ArrayList<Annotation>();
+  private final List<Annotation> annotations = new ArrayList<Annotation>();
 
   private String methodComment;
 
@@ -212,17 +218,12 @@ public class BuildMetaMethod extends MetaMethod implements Builder {
   }
 
   public void addAnnotations(final Annotation... annotations) {
-    for (final Annotation a : annotations) {
-      this.annotations.add(a);
-    }
+    addAnnotations(Arrays.asList(annotations));
   }
 
   public void addAnnotations(final Collection<Annotation> annotations) {
-    for (final Annotation a : annotations) {
-      this.annotations.add(a);
-    }
+    annotations.forEach(a -> this.annotations.add(a));
   }
-
 
   @Override
   public Annotation[] getAnnotations() {
@@ -346,6 +347,7 @@ public class BuildMetaMethod extends MetaMethod implements Builder {
     return buf.toString();
   }
 
+  @Override
   public String toString() {
     return name + defParameters;
   }

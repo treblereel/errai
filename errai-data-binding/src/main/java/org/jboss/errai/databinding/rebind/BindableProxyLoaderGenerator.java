@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 
 package org.jboss.errai.databinding.rebind;
 
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.Set;
 
@@ -23,7 +24,6 @@ import org.jboss.errai.codegen.Cast;
 import org.jboss.errai.codegen.InnerClass;
 import org.jboss.errai.codegen.Parameter;
 import org.jboss.errai.codegen.Statement;
-import org.jboss.errai.codegen.Variable;
 import org.jboss.errai.codegen.builder.ClassStructureBuilder;
 import org.jboss.errai.codegen.builder.MethodBlockBuilder;
 import org.jboss.errai.codegen.builder.impl.ClassBuilder;
@@ -44,7 +44,6 @@ import org.jboss.errai.databinding.client.api.Bindable;
 import org.jboss.errai.databinding.client.api.Convert;
 import org.jboss.errai.databinding.client.api.Converter;
 import org.jboss.errai.databinding.client.api.DefaultConverter;
-import org.jboss.errai.databinding.client.api.InitialState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +53,7 @@ import com.google.gwt.core.ext.UnableToCompleteException;
 
 /**
  * Generates the proxy loader for {@link Bindable}s.
- * 
+ *
  * @author Christian Sadilek <csadilek@redhat.com>
  */
 @GenerateAsync(BindableProxyLoader.class)
@@ -77,7 +76,7 @@ public class BindableProxyLoaderGenerator extends AbstractAsyncGenerator {
 
     Set<MetaClass> allBindableTypes = DataBindingUtil.getAllBindableTypes(context);
     addCacheRelevantClasses(allBindableTypes);
-    
+
     for (MetaClass bindable : allBindableTypes) {
       if (bindable.isFinal()) {
         throw new RuntimeException("@Bindable type cannot be final: " + bindable.getFullyQualifiedName());
@@ -93,15 +92,14 @@ public class BindableProxyLoaderGenerator extends AbstractAsyncGenerator {
       Statement proxyProvider =
           ObjectBuilder.newInstanceOf(BindableProxyProvider.class)
               .extend()
-              .publicOverridesMethod("getBindableProxy", Parameter.of(Object.class, "model"),
-                  Parameter.of(InitialState.class, "state"))
+              .publicOverridesMethod("getBindableProxy", Parameter.of(Object.class, "model"))
               .append(Stmt.nestedCall(Stmt.newObject(bindableProxy.getClassDefinition())
-                  .withParameters(Cast.to(bindable, Stmt.loadVariable("model")), Variable.get("state"))).returnValue())
+                  .withParameters(Cast.to(bindable, Stmt.loadVariable("model")))).returnValue())
               .finish()
-              .publicOverridesMethod("getBindableProxy", Parameter.of(InitialState.class, "state"))
+              .publicOverridesMethod("getBindableProxy")
               .append(
                   Stmt.nestedCall(
-                      Stmt.newObject(bindableProxy.getClassDefinition()).withParameters(Variable.get("state")))
+                      Stmt.newObject(bindableProxy.getClassDefinition()))
                       .returnValue())
               .finish()
               .finish();
@@ -148,9 +146,15 @@ public class BindableProxyLoaderGenerator extends AbstractAsyncGenerator {
       }
     }
   }
-  
+
   @Override
-  protected boolean isRelevantNewClass(MetaClass clazz) {
-    return clazz.isAnnotationPresent(Bindable.class) || clazz.isAnnotationPresent(DefaultConverter.class);
+  protected boolean isRelevantClass(MetaClass clazz) {
+    for (final Annotation anno : clazz.getAnnotations()) {
+      if (anno.annotationType().equals(Bindable.class) || anno.annotationType().equals(DefaultConverter.class)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

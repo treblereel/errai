@@ -1,16 +1,34 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.ui.nav.client.local;
 
 import org.jboss.errai.ui.nav.client.local.api.PageNavigationErrorHandler;
-
-import com.google.gwt.core.client.GWT;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements default error handling behavior for page navigation.
- * 
+ *
  * @author Divya Dadlani <ddadlani@redhat.com>
- * 
+ *
  */
 public class DefaultNavigationErrorHandler implements PageNavigationErrorHandler {
+
+  private static Logger logger = LoggerFactory.getLogger(DefaultNavigatingContainer.class);
 
   private Navigation navigation;
 
@@ -24,7 +42,7 @@ public class DefaultNavigationErrorHandler implements PageNavigationErrorHandler
       throw new Error("Failed to initialize Default Page", exception);
     }
     else {
-      GWT.log("Got invalid page name \"" + pageName + "\". Redirecting to default page.", exception);
+      logger.warn("Got invalid page name \"" + pageName + "\". Redirecting to default page.", exception);
       navigation.goTo("");
     }
   }
@@ -35,7 +53,7 @@ public class DefaultNavigationErrorHandler implements PageNavigationErrorHandler
       throw new Error("Failed to initialize Default Page", exception);
     }
     else {
-      GWT.log("Got invalid page role \"" + pageRole + "\". Redirecting to default page.", exception);
+      logger.error("Got invalid page role \"" + pageRole + "\". Redirecting to default page.", exception);
       navigation.goTo("");
     }
   }
@@ -46,7 +64,7 @@ public class DefaultNavigationErrorHandler implements PageNavigationErrorHandler
       throw new Error("Failed to initialize Default Page", exception);
     }
     else {
-      GWT.log("Got invalid URL \"" + urlPath + "\". Redirecting to default page.", exception);
+      logger.warn("Got invalid URL \"" + urlPath + "\". Redirecting to default page.", exception);
       navigation.goTo("");
     }
   }

@@ -25,7 +25,7 @@
   <parent>
     <groupId>org.jboss.integration-platform</groupId>
     <artifactId>jboss-integration-platform-parent</artifactId>
-    <version>6.0.0.CR27</version>
+    <version>6.0.2.Final</version>
   </parent>
 
   <developers>
@@ -106,7 +106,6 @@
     <module>errai-ioc-bus-support</module>
     <module>errai-bus-websocket</module>    
     <module>errai-jboss-as-support</module>
-    <module>errai-otec</module>
     <module>errai-security</module>
     <module>errai-demos</module>
     <module>errai-client-local-class-hider</module>
@@ -122,11 +121,51 @@
       <url>https://repository.jboss.org/nexus/content/groups/public</url>
     </repository>
     <repository>
-      <id>central</id>
-      <name>Sonatype Repo</name>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <id>google-snapshots</id>
+      <name>Google Snapshots Repo</name>
+      <url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>sonatype-public</id>
+      <name>Sonatype Public Snapshots Repo</name>
+      <url>https://oss.sonatype.org/content/repositories/public</url>
     </repository>
   </repositories>
+
+  <!-- This must be here for gwt-maven-plugin 2.8.0-SNAPSHOT -->
+  <pluginRepositories>
+    <pluginRepository>
+      <id>jboss</id>
+      <name>JBoss Public Repo</name>
+      <url>https://repository.jboss.org/nexus/content/groups/public</url>
+    </pluginRepository>
+    <pluginRepository>
+      <id>public-snapshots-repo</id>
+      <url>https://oss.sonatype.org/content/repositories/public/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>google-snapshots-repo</id>
+      <url>https://oss.sonatype.org/content/repositories/google-snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
 
   <dependencies>
     <dependency>
@@ -151,7 +190,7 @@
       <dependency>
         <groupId>org.jboss.integration-platform</groupId>
         <artifactId>jboss-integration-platform-bom</artifactId>
-        <version>6.0.0.CR27</version>
+        <version>6.0.2.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -337,6 +376,10 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>2.3.2</version>
+          <configuration>
+            <source>1.8</source>
+            <target>1.8</target>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

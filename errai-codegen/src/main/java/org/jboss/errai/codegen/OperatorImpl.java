@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,8 @@
  */
 
 package org.jboss.errai.codegen;
+
+import java.util.Arrays;
 
 import org.jboss.errai.codegen.exception.InvalidExpressionException;
 import org.jboss.errai.codegen.meta.MetaClass;
@@ -67,11 +69,6 @@ public class OperatorImpl implements Operator {
   @Override
   public boolean canBeApplied(MetaClass clazz) {
     if (constraints.length == 0) return true;
-
-    for (final MetaClass mc : constraints) {
-      if (mc.asBoxed().isAssignableFrom(clazz.asBoxed())) return true;
-    }
-
-    return false;
+    return Arrays.stream(constraints).anyMatch(mc -> mc.asBoxed().isAssignableFrom(clazz.asBoxed()));
   }
 }

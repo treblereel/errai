@@ -1,11 +1,11 @@
 /*
- * Copyright 2013 JBoss, by Red Hat, Inc
+ * Copyright (C) 2013 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.ui.rebind;
 
 import java.io.File;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
@@ -103,7 +106,7 @@ import com.google.gwt.resources.client.TextResource;
 public class TranslationServiceGenerator extends AbstractAsyncGenerator {
 
   private static final String GENERATED_CLASS_NAME = "TranslationServiceImpl";
-  private static Pattern LOCALE_IN_FILENAME_PATTERN = Pattern.compile("([^_]*)_(\\w\\w)?(_\\w\\w)?\\.json");
+  private static Pattern LOCALE_IN_FILENAME_PATTERN = Pattern.compile("([^_]*)_(\\w\\w)?(_\\w\\w)?\\.(json|properties)");
 
   private static final Logger log = LoggerFactory.getLogger(TranslationServiceGenerator.class);
 
@@ -185,7 +188,7 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
     log.info("Preparing to scan for i18n bundle files.");
     MessageBundleScanner scanner = new MessageBundleScanner(
             new ConfigurationBuilder()
-                .filterInputsBy(new FilterBuilder().include(".*json"))
+                .filterInputsBy(new FilterBuilder().include(".*json").include(".*properties"))
                 .setUrls(scannableUrls)
                 .setScanners(new MessageBundleResourceScanner(bundlePaths)));
 
@@ -215,7 +218,9 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
 
       // Create a dictionary from the message bundle and register it.
       String locale = getLocaleFromBundlePath(resource);
-      ctor.append(Stmt.loadVariable("this").invoke("registerBundle",
+      
+      final String registerBundleMethod = (isJsonBundle(resource)) ? "registerJsonBundle" : "registerPropertiesBundle";
+      ctor.append(Stmt.loadVariable("this").invoke(registerBundleMethod,
               Stmt.loadVariable(msgBundleVarName).invoke("getContents").invoke("getText"), locale));
 
       recordBundleKeys(discoveredI18nMap, locale, resource);
@@ -257,7 +262,7 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
         final URL classpathElement;
         final String pathRoot = getPathRoot(bundleClass, resource);
         try {
-          String urlString = new File(pathRoot).toURI().toURL().toString();
+          String urlString = new URI(pathRoot).toURL().toString();
 
           // URLs returned by the classloader are UTF-8 encoded. The URLDecoder assumes
           // a HTML form encoded String, which is why we escape the plus symbols here.
@@ -277,6 +282,7 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
   private String getPathRoot(final MetaClass bundleClass, final URL resource) {
     final String fullPath = resource.getPath();
     final String resourcePath = bundleClass.getAnnotation(Bundle.class).value();
+    final String protocol = resource.getProtocol();
 
     final String relativePath;
     if (resourcePath.startsWith("/"))
@@ -285,7 +291,8 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
       // Do NOT use File.separatorChar here: Url.getPath() always uses forward-slashes
       relativePath = bundleClass.getPackageName().replace('.', '/');
 
-    return fullPath.substring(0, fullPath.indexOf(relativePath));
+    final String pathRoot = fullPath.substring(0, fullPath.indexOf(relativePath));
+    return protocol + ":" + pathRoot;
   }
 
   /**
@@ -295,6 +302,7 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
    * @param locale
    * @param bundlePath
    */
+  @SuppressWarnings({ "rawtypes", "unchecked" })
   protected static void recordBundleKeys(Map<String, Set<String>> discoveredI18nMap, String locale, String bundlePath) {
     InputStream is = null;
     try {
@@ -304,15 +312,23 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
         discoveredI18nMap.put(locale, keys);
       }
       is = TranslationServiceGenerator.class.getClassLoader().getResourceAsStream(bundlePath);
-      JsonFactory jsonFactory = new JsonFactory();
-      JsonParser jp = jsonFactory.createJsonParser(is);
-      JsonToken token = jp.nextToken();
-      while (token != null) {
-        token = jp.nextToken();
-        if (token == JsonToken.FIELD_NAME) {
-          String name = jp.getCurrentName();
-          keys.add(name);
+      
+      if (isJsonBundle(bundlePath)) {
+        JsonFactory jsonFactory = new JsonFactory();
+        JsonParser jp = jsonFactory.createJsonParser(is);
+        JsonToken token = jp.nextToken();
+        while (token != null) {
+          token = jp.nextToken();
+          if (token == JsonToken.FIELD_NAME) {
+            String name = jp.getCurrentName();
+            keys.add(name);
+          }
         }
+      } 
+      else {
+        final Properties properties = new Properties();
+        properties.load(is);
+        keys.addAll((Set) properties.keySet());
       }
     }
     catch (Exception e) {
@@ -323,6 +339,10 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
     }
   }
 
+  private static boolean isJsonBundle(String path) {
+    return path.endsWith(".json");
+  }
+  
   /**
    * Gets the bundle name from the @Bundle annotation.
    *
@@ -564,7 +584,6 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
    */
   private static class MessageBundleResourceScanner extends ResourcesScanner {
     private final List<String> bundlePrefixes = new ArrayList<String>();
-    private final String bundleSuffix = ".json";
 
     /**
      * Constructor.
@@ -573,8 +592,8 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
      */
     public MessageBundleResourceScanner(Set<String> bundlePaths) {
       Assert.notNull(bundlePaths);
-      for (String bundlePath : bundlePaths) {
-        String prefix = bundlePath.substring(0, bundlePath.lastIndexOf(".json"));
+      for (String path : bundlePaths) {
+        String prefix = path.substring(0, Math.max(path.lastIndexOf(".json"), path.lastIndexOf(".properties")));
         bundlePrefixes.add(prefix);
       }
     }
@@ -584,10 +603,6 @@ public class TranslationServiceGenerator extends AbstractAsyncGenerator {
      */
     @Override
     public boolean acceptsInput(String file) {
-      if (file == null || !file.endsWith(this.bundleSuffix)) {
-        return false;
-      }
-
       for (String bundlePrefix : bundlePrefixes) {
         if (file.startsWith(bundlePrefix)) {
           return true;

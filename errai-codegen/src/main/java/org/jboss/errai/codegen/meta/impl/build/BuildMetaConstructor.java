@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,10 @@
  */
 
 package org.jboss.errai.codegen.meta.impl.build;
+
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jboss.errai.codegen.Comment;
 import org.jboss.errai.codegen.Context;
@@ -31,10 +35,6 @@ import org.jboss.errai.codegen.meta.MetaParameter;
 import org.jboss.errai.codegen.meta.MetaType;
 import org.jboss.errai.codegen.meta.MetaTypeVariable;
 import org.jboss.errai.codegen.util.GenUtil;
-
-import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Mike Brock <cbrock@redhat.com>
@@ -265,13 +265,9 @@ public class BuildMetaConstructor extends MetaConstructor implements Builder {
     if (generatedCache != null) return generatedCache;
 
     final Context context = Context.create(declaringClass.getContext());
-    
-    for (final Parameter p : defParameters.getParameters()) {
-      context.addVariable(Variable.create(p.getName(), p.getType()));
-    }
+    defParameters.getParameters().stream().forEach(p -> context.addVariable(Variable.create(p.getName(), p.getType())));
 
     final StringBuilder build = new StringBuilder(512);
-
     if (constructorComment != null)  {
       build.append(new Comment(constructorComment).generate(null)).append('\n');
     }

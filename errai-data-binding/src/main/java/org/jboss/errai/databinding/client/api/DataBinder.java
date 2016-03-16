@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.errai.common.client.api.Assert;
+import org.jboss.errai.common.client.function.Optional;
 import org.jboss.errai.databinding.client.BindableProxy;
 import org.jboss.errai.databinding.client.BindableProxyAgent;
 import org.jboss.errai.databinding.client.BindableProxyFactory;
@@ -31,7 +32,9 @@ import org.jboss.errai.databinding.client.NonExistingPropertyException;
 import org.jboss.errai.databinding.client.OneTimeUnsubscribeHandle;
 import org.jboss.errai.databinding.client.PropertyChangeHandlerSupport;
 import org.jboss.errai.databinding.client.PropertyChangeUnsubscribeHandle;
-import org.jboss.errai.databinding.client.WidgetAlreadyBoundException;
+import org.jboss.errai.databinding.client.ComponentAlreadyBoundException;
+import org.jboss.errai.databinding.client.api.handler.property.PropertyChangeEvent;
+import org.jboss.errai.databinding.client.api.handler.property.PropertyChangeHandler;
 
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
@@ -45,12 +48,20 @@ import com.google.gwt.user.client.ui.Widget;
  * sync for as long as they are bound.
  *
  * @author Christian Sadilek <csadilek@redhat.com>
+ * @author Max Barkley <mbarkley@redhat.com>
  */
 public class DataBinder<T> implements HasPropertyChangeHandlers {
   private final PropertyChangeHandlerSupport propertyChangeHandlerSupport = new PropertyChangeHandlerSupport();
-  private final InitialState initialState;
   private Multimap<String, Binding> bindings = LinkedHashMultimap.create();
+
   private T proxy;
+  private T paused;
+
+  protected DataBinder() {
+    throw new RuntimeException(
+            "This constructor exists to allow external access to protected methods through subclassing. There should be no instantiable subclasses of "
+                    + getClass().getName());
+  }
 
   /**
    * Creates a {@link DataBinder} for a new model instance of the provided type
@@ -60,53 +71,17 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    *          The bindable type, must not be null.
    */
   private DataBinder(Class<T> modelType) {
-    this(modelType, null);
+    this.proxy = BindableProxyFactory.getBindableProxy(Assert.notNull(modelType));
   }
 
   /**
-   * Creates a {@link DataBinder} for a new model instance of the provided type
-   * (see {@link #forType(Class)}), initializing either model or UI widgets from
-   * the values defined by {@link InitialState} (see
-   * {@link #forModel(Object, InitialState)}).
-   *
-   * @param modelType
-   *          The bindable type, must not be null.
-   * @param initialState
-   *          Specifies the origin of the initial state of both model and UI
-   *          widget. Null if no initial state synchronization should be carried
-   *          out.
-   */
-  private DataBinder(Class<T> modelType, InitialState initialState) {
-    this.initialState = initialState;
-    this.proxy = BindableProxyFactory.getBindableProxy(Assert.notNull(modelType), initialState);
-  }
-
-  /**
-   * Creates a {@link DataBinder} for the provided model instance (see
-   * {@link #forModel(Object)}).
+   * Creates a {@link DataBinder} for the provided model instance.
    *
    * @param model
    *          The instance of a {@link Bindable} type, must not be null.
    */
   private DataBinder(T model) {
-    this(Assert.notNull(model), null);
-  }
-
-  /**
-   * Creates a {@link DataBinder} for the provided model instance, initializing
-   * either model or UI widgets from the values defined by {@link InitialState}
-   * (see {@link #forModel(Object, InitialState)}).
-   *
-   * @param model
-   *          The instance of a {@link Bindable} type, must not be null.
-   * @param initialState
-   *          Specifies the origin of the initial state of both model and UI
-   *          widget. Null if no initial state synchronization should be carried
-   *          out.
-   */
-  private DataBinder(T model, InitialState initialState) {
-    this.initialState = initialState;
-    this.proxy = BindableProxyFactory.getBindableProxy(Assert.notNull(model), initialState);
+    this.proxy = BindableProxyFactory.getBindableProxy(Assert.notNull(model));
   }
 
   /**
@@ -116,23 +91,18 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    *          The bindable type, must not be null.
    */
   public static <T> DataBinder<T> forType(Class<T> modelType) {
-    return forType(modelType, null);
+    return new DataBinder<T>(modelType);
   }
 
   /**
-   * Creates a {@link DataBinder} for a new model instance of the provided type,
-   * initializing either model or UI widgets from the values defined by
-   * {@link InitialState}.
+   * Creates a {@link DataBinder} for a list with models of the provided type.
    *
    * @param modelType
    *          The bindable type, must not be null.
-   * @param initialState
-   *          Specifies the origin of the initial state of both model and UI
-   *          widget. Null if no initial state synchronization should be carried
-   *          out.
    */
-  public static <T> DataBinder<T> forType(Class<T> modelType, InitialState initialState) {
-    return new DataBinder<T>(modelType, initialState);
+  @SuppressWarnings({ "unchecked", "rawtypes" })
+  public static <T> DataBinder<List<T>> forListOfType(Class<T> modelType) {
+    return new DataBinder<List<T>>((Class) List.class);
   }
 
   /**
@@ -142,32 +112,17 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    *          The instance of a {@link Bindable} type, must not be null.
    */
   public static <T> DataBinder<T> forModel(T model) {
-    return forModel(model, null);
+    return new DataBinder<T>(model);
   }
 
   /**
-   * Creates a {@link DataBinder} for the provided model instance, initializing
-   * either model or UI widgets from the values defined by {@link InitialState}.
-   *
-   * @param model
-   *          The instance of a {@link Bindable} type, must not be null.
-   * @param intialState
-   *          Specifies the origin of the initial state of both model and UI
-   *          widget. Null if no initial state synchronization should be carried
-   *          out.
-   */
-  public static <T> DataBinder<T> forModel(T model, InitialState initialState) {
-    return new DataBinder<T>(model, initialState);
-  }
-
-  /**
-   * Binds the provided widget to the specified property of the model instance
-   * associated with this {@link DataBinder}. If the provided widget already
+   * Binds the provided component to the specified property of the model instance
+   * associated with this {@link DataBinder}. If the provided component already
    * participates in another binding managed by this {@link DataBinder}, a
-   * {@link WidgetAlreadyBoundException} will be thrown.
+   * {@link ComponentAlreadyBoundException} will be thrown.
    *
-   * @param widget
-   *          The widget the model instance should be bound to, must not be
+   * @param component
+   *          The UI component the model instance should be bound to, must not be
    *          null.
    * @param property
    *          The name of the model property that should be used for the
@@ -180,23 +135,56 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    *           name.
    * @throws InvalidPropertyExpressionException
    *           If the provided property chain expression is invalid.
-   * @throws WidgetAlreadyBoundException
-   *           If the provided {@code widget} is already bound to a property of
+   * @throws ComponentAlreadyBoundException
+   *           If the provided {@code component} is already bound to a property of
    *           the model.
    */
-  public DataBinder<T> bind(final Widget widget, final String property) {
-    bind(widget, property, null);
+  public DataBinder<T> bind(final Object component, String property) {
+    return bind(component, property, null);
+  }
+
+  /**
+   * Binds the provided component to the specified property of the model instance
+   * associated with this {@link DataBinder}. If the provided component already
+   * participates in another binding managed by this {@link DataBinder}, a
+   * {@link ComponentAlreadyBoundException} will be thrown.
+   *
+   * @param component
+   *          The UI component the model instance should be bound to, must not be
+   *          null.
+   * @param property
+   *          The name of the model property that should be used for the
+   *          binding, following Java bean conventions. Chained (nested)
+   *          properties are supported and must be dot (.) delimited (e.g.
+   *          customer.address.street). Must not be null.
+   * @param converter
+   *          The converter to use for the binding, null if default conversion
+   *          should be used (see {@link Convert#getConverter(Class, Class)} or
+   *          {@link Convert#identityConverter(Class)} for possible arguments).
+   * @return the same {@link DataBinder} instance to support call chaining.
+   * @throws NonExistingPropertyException
+   *           If the {@code model} does not have a property with the given
+   *           name.
+   * @throws InvalidPropertyExpressionException
+   *           If the provided property chain expression is invalid.
+   * @throws ComponentAlreadyBoundException
+   *           If the provided {@code component} is already bound to a property of
+   *           the model.
+   */
+  public DataBinder<T> bind(final Object component, final String property,
+          @SuppressWarnings("rawtypes") final Converter converter) {
+    bind(component, property, converter, StateSync.FROM_MODEL);
     return this;
   }
 
   /**
-   * Binds the provided widget to the specified property of the model instance
-   * associated with this {@link DataBinder}. If the provided widget already
+   * Binds the provided component to the specified property of the model instance
+   * associated with this {@link DataBinder}. If the provided component already
    * participates in another binding managed by this {@link DataBinder}, a
-   * {@link WidgetAlreadyBoundException} will be thrown.
+   * {@link ComponentAlreadyBoundException} will be thrown.
    *
-   * @param widget
-   *          The widget the model instance should be bound to, must not be
+   * @param component
+   *          The UI component the model instance should be bound to, must not be
    *          null.
    * @param property
    *          The name of the model property that should be used for the
@@ -205,31 +193,36 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    *          customer.address.street). Must not be null.
    * @param converter
    *          The converter to use for the binding, null if default conversion
-   *          should be used (see {@link Convert}).
+   *          should be used (see {@link Convert#getConverter(Class, Class)} or
+   *          {@link Convert#identityConverter(Class)} for possible arguments).
+   * @param initialState
+   *          Specifies the origin of the initial state of both model and UI
+   *          component. Null if no initial state synchronization should be carried
+   *          out.
    * @return the same {@link DataBinder} instance to support call chaining.
    * @throws NonExistingPropertyException
    *           If the {@code model} does not have a property with the given
    *           name.
    * @throws InvalidPropertyExpressionException
    *           If the provided property chain expression is invalid.
-   * @throws WidgetAlreadyBoundException
-   *           If the provided {@code widget} is already bound to a property of
+   * @throws ComponentAlreadyBoundException
+   *           If the provided {@code component} is already bound to a property of
    *           the model.
    */
-  public DataBinder<T> bind(final Widget widget, final String property,
-          @SuppressWarnings("rawtypes") final Converter converter) {
+  public DataBinder<T> bind(final Object component, final String property,
+          @SuppressWarnings("rawtypes") final Converter converter, final StateSync initialState) {
 
-    return bind(widget, property, converter, false);
+    return bind(component, property, converter, initialState, false);
   }
 
   /**
-   * Binds the provided widget to the specified property of the model instance
-   * associated with this {@link DataBinder}. If the provided widget already
+   * Binds the provided component to the specified property of the model instance
+   * associated with this {@link DataBinder}. If the provided component already
    * participates in another binding managed by this {@link DataBinder}, a
-   * {@link WidgetAlreadyBoundException} will be thrown.
+   * {@link ComponentAlreadyBoundException} will be thrown.
    *
-   * @param widget
-   *          The widget the model instance should be bound to, must not be
+   * @param component
+   *          The UI component the model instance should be bound to, must not be
    *          null.
    * @param property
    *          The name of the model property that should be used for the
@@ -238,37 +231,38 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    *          customer.address.street). Must not be null.
    * @param converter
    *          The converter to use for the binding, null if default conversion
-   *          should be used (see {@link Convert}).
+   *          should be used (see {@link Convert#getConverter(Class, Class)} or
+   *          {@link Convert#identityConverter(Class)} for possible arguments).
+   * @param initialState
+   *          Specifies the origin of the initial state of both model and UI
+   *          component. Null if no initial state synchronization should be carried
+   *          out.
    * @param bindOnKeyUp
-   *          A boolean value that allows models bound to text-based widgets to
+   *          A boolean value that allows models bound to text-based components to
    *          be updated on a {@link com.google.gwt.event.dom.client.KeyUpEvent}
    *          as well as the default
-   *          {@link com.google.gwt.event .logical.shared.ValueChangeEvent}
-   *
+   *          {@link com.google.gwt.event.logical.shared.ValueChangeEvent}
    * @return the same {@link DataBinder} instance to support call chaining.
    * @throws NonExistingPropertyException
    *           If the {@code model} does not have a property with the given
    *           name.
    * @throws InvalidPropertyExpressionException
    *           If the provided property chain expression is invalid.
-   * @throws WidgetAlreadyBoundException
-   *           If the provided {@code widget} is already bound to a property of
+   * @throws ComponentAlreadyBoundException
+   *           If the provided {@code component} is already bound to a property of
    *           the model.
-   * @throws InvalidBindEventException
-   *           If the bindOnKeyUp flag is true and the {@code widget} does not
-   *           extend ValueBoxBase.
    */
-  public DataBinder<T> bind(final Widget widget, final String property,
-          @SuppressWarnings("rawtypes") final Converter converter, final boolean bindOnKeyUp) {
+  public DataBinder<T> bind(final Object component, final String property,
+          @SuppressWarnings("rawtypes") final Converter converter, final StateSync initialState, final boolean bindOnKeyUp) {
 
-    Assert.notNull(widget);
+    Assert.notNull(component);
     Assert.notNull(property);
 
     if (!(proxy instanceof BindableProxy<?>)) {
-      proxy = BindableProxyFactory.getBindableProxy(Assert.notNull(proxy), initialState);
+      proxy = BindableProxyFactory.getBindableProxy(Assert.notNull(proxy));
     }
 
-    Binding binding = getAgent().bind(widget, property, converter, bindOnKeyUp);
+    Binding binding = getAgent().bind(component, property, converter, bindOnKeyUp, initialState);
     bindings.put(property, binding);
     return this;
   }
@@ -322,6 +316,7 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
     if (clearBindings) {
       bindings.clear();
     }
+    clearModelHandlers();
 
     // Proxies without bindings will be removed from the cache to make sure the
     // garbage collector can do its job (see
@@ -330,6 +325,10 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
     // will be reused.
     unwrapProxy();
     return this;
+  }
+
+  private void clearModelHandlers() {
+    getAgent().clearModelHandlers();
   }
 
   /**
@@ -341,14 +340,15 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    */
   public T getModel() {
     ensureProxied();
-    return this.proxy;
+    return (paused == null) ? proxy : paused;
   }
 
   /**
    * Changes the underlying model instance. The existing bindings stay intact
    * but only affect the new model instance. The previously associated model
    * instance will no longer be kept in sync with the UI. The bound UI widgets
-   * will be updated based on the new model state.
+   * will be updated based on the new model state. Bindings will be resumed if
+   * they are currently paused.
    *
    * @param model
    *          The instance of a {@link Bindable} type, must not be null.
@@ -358,40 +358,40 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    *         accessible using {@link #getModel()}).
    */
   public T setModel(T model) {
-    return setModel(model, InitialState.FROM_MODEL);
+    return setModel(model, StateSync.FROM_MODEL);
   }
 
   /**
    * Changes the underlying model instance. The existing bindings stay intact
    * but only affect the new model instance. The previously associated model
-   * instance will no longer be kept in sync with the UI.
+   * instance will no longer be kept in sync with the UI. Bindings will be
+   * resumed if they are currently paused.
    *
    * @param model
    *          The instance of a {@link Bindable} type, must not be null.
    * @param initialState
    *          Specifies the origin of the initial state of both model and UI
-   *          widget. Null if no initial state synchronization should be carried
-   *          out.
+   *          widget.
    * @return The model instance which has to be used in place of the provided
    *         model (see {@link #forModel(Object)} and {@link #forType(Class)})
    *         if changes should be automatically synchronized with the UI (also
    *         accessible using {@link #getModel()}).
    */
-  public T setModel(T model, InitialState initialState) {
+  public T setModel(T model, StateSync initialState) {
     return setModel(model, initialState, false);
   }
 
   /**
    * Changes the underlying model instance. The existing bindings stay intact
    * but only affect the new model instance. The previously associated model
-   * instance will no longer be kept in sync with the UI.
+   * instance will no longer be kept in sync with the UI. Bindings will be
+   * resumed if they are currently paused.
    *
    * @param model
    *          The instance of a {@link Bindable} type, must not be null.
    * @param initialState
    *          Specifies the origin of the initial state of both model and UI
-   *          widget. Null if no initial state synchronization should be carried
-   *          out.
+   *          widget.
    * @param fireChangeEvents
    *          Specifies whether or not {@link PropertyChangeEvent}s should be
    *          fired as a consequence of the model change.
@@ -401,22 +401,21 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    *         accessible using {@link #getModel()}).
    */
   @SuppressWarnings("unchecked")
-  public T setModel(T model, InitialState initialState, boolean fireChangeEvents) {
+  public T setModel(T model, StateSync initialState, boolean fireChangeEvents) {
     Assert.notNull(model);
 
-    BindableProxy<T> newProxy;
-    InitialState newInitState = (initialState != null) ? initialState : getAgent().getInitialState();
+    final BindableProxy<T> newProxy;
+    final StateSync newInitState = Optional.ofNullable(initialState).orElse(StateSync.FROM_MODEL);
     if (model instanceof BindableProxy) {
       newProxy = (BindableProxy<T>) model;
-      newProxy.getBindableProxyAgent().setInitialState(newInitState);
     }
     else {
-      newProxy = (BindableProxy<T>) BindableProxyFactory.getBindableProxy(model, newInitState);
+      newProxy = (BindableProxy<T>) BindableProxyFactory.getBindableProxy(model);
     }
 
     newProxy.getBindableProxyAgent().mergePropertyChangeHandlers(propertyChangeHandlerSupport);
     if (fireChangeEvents) {
-      newProxy.getBindableProxyAgent().fireChangeEvents(getAgent());
+      newProxy.getBindableProxyAgent().fireChangeEvents(getAgent(), initialState);
     }
 
     if (newProxy != this.proxy) {
@@ -432,8 +431,10 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
 
       newProxy.getBindableProxyAgent().unbind(b);
       bindings.put(b.getProperty(), newProxy.getBindableProxyAgent()
-                                      .bind(b.getWidget(), b.getProperty(), b.getConverter(), bindOnKeyUp));
+                                      .bind(b.getComponent(), b.getProperty(), b.getConverter(), bindOnKeyUp, newInitState));
     }
+
+    this.paused = null;
     this.bindings = bindings;
     this.proxy = (T) newProxy;
     return this.proxy;
@@ -448,11 +449,11 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    * @return the list of widgets currently bound to the provided property or an
    *         empty list if no widget was bound to the property.
    */
-  public List<Widget> getWidgets(String property) {
+  public List<Object> getComponents(String property) {
     Assert.notNull(property);
-    List<Widget> widgets = new ArrayList<Widget>();
+    List<Object> widgets = new ArrayList<>();
     for (Binding binding : bindings.get(property)) {
-      widgets.add(binding.getWidget());
+      widgets.add(binding.getComponent());
     }
     return widgets;
   }
@@ -465,6 +466,44 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
    */
   public Set<String> getBoundProperties() {
     return bindings.keySet();
+  }
+
+  /**
+   * Pauses all bindings. The model and UI fields are no longer kept in sync
+   * until either {@link #resume(StateSync)} or {@link #setModel(Object)} is
+   * called. This method has no effect if the bindings are already paused.
+   */
+  @SuppressWarnings("unchecked")
+  public void pause() {
+    if (paused != null) return;
+
+    T paused = proxy;
+    T clone = (T) ((BindableProxy<?>) proxy).deepUnwrap();
+    setModel(clone);
+    this.paused = paused;
+  }
+
+  /**
+   * Resumes the previously paused bindings (see {@link #pause()}) and carries
+   * out state synchronization to catch up on changes that happened in the
+   * meantime. This method has no effect if {@link #pause()} was never called.
+   *
+   * @param resumeState
+   *          the state to resume from. Must not be null.
+   */
+  public void resume(final StateSync resumeState) {
+    if (paused == null) return;
+
+    Assert.notNull(resumeState);
+    setModel(paused, resumeState);
+  }
+
+  /**
+   * @return true iff {@link #pause()} was called and there have been no calls since to {@link #resume(StateSync)} or
+   *         {@link #setModel(Object, StateSync, boolean)}.
+   */
+  public boolean isPaused() {
+    return (paused != null);
   }
 
   @Override
@@ -509,7 +548,14 @@ public class DataBinder<T> implements HasPropertyChangeHandlers {
 
   private void ensureProxied() {
     if (!(proxy instanceof BindableProxy<?>)) {
-      proxy = BindableProxyFactory.getBindableProxy(Assert.notNull(proxy), null);
+      proxy = BindableProxyFactory.getBindableProxy(Assert.notNull(proxy));
     }
+  }
+
+  /**
+   * For adding nested bindings. This method must be public, but should not be called by end users.
+   */
+  public void addBinding(final String property, final Binding binding) {
+    bindings.put(property, binding);
   }
 }

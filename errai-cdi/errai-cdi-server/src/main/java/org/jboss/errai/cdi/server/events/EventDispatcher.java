@@ -1,18 +1,19 @@
 /*
- * Copyright 2014 JBoss, by Red Hat, Inc
+ * Copyright (C) 2014 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *  
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.cdi.server.events;
 
 import static org.jboss.errai.enterprise.client.cdi.api.CDI.getSubjectNameByType;
@@ -50,7 +51,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Acts as a bridge between Errai Bus and the CDI event system.
- * 
+ *
  * @author Mike Brock
  * @author Christian Sadilek <csadilek@redhat.com>
  * @author Jonathan Fuerth <jfuerth@redhat.com>
@@ -63,19 +64,19 @@ public class EventDispatcher implements MessageCallback {
   private final EventRoutingTable eventRoutingTable;
   private final MessageBus messagebus;
   private final Set<String> observedEvents;
-  private final Map<String, Annotation> allQualifiers;
+  private final Map<String, Annotation> eventQualifiers;
 
   private final Set<ClientObserverMetadata> clientObservers = Collections
           .newSetFromMap(new ConcurrentHashMap<ClientObserverMetadata, Boolean>());
 
   public EventDispatcher(final BeanManager beanManager, final EventRoutingTable eventRoutingTable,
-          final MessageBus messageBus, final Set<String> observedEvents, final Map<String, Annotation> qualifiers) {
+          final MessageBus messageBus, final Set<String> observedEvents, final Map<String, Annotation> eventQualifiers) {
 
     this.beanManager = beanManager;
     this.eventRoutingTable = eventRoutingTable;
     this.messagebus = messageBus;
     this.observedEvents = observedEvents;
-    this.allQualifiers = qualifiers;
+    this.eventQualifiers = eventQualifiers;
   }
 
   @Override
@@ -120,8 +121,8 @@ public class EventDispatcher implements MessageCallback {
           List<Annotation> qualifiers = new ArrayList<Annotation>();
 
           if (qualifierNames != null) {
-            for (final String qualifierName : qualifierNames) {
-              final Annotation qualifier = allQualifiers.get(qualifierName);
+            for (final String serializedQualifier : qualifierNames) {
+              final Annotation qualifier = eventQualifiers.get(serializedQualifier);
               if (qualifier != null) {
                 qualifiers.add(qualifier);
               }

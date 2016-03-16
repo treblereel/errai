@@ -1,11 +1,11 @@
 /*
- * Copyright 2013 JBoss, by Red Hat, Inc
+ * Copyright (C) 2013 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@ import static org.jboss.errai.codegen.meta.MetaClassFactory.parameterizedAs;
 import static org.jboss.errai.codegen.meta.MetaClassFactory.typeParametersOf;
 import static org.jboss.errai.codegen.util.Stmt.castTo;
 import static org.jboss.errai.codegen.util.Stmt.declareFinalVariable;
+import static org.jboss.errai.codegen.util.Stmt.declareVariable;
 import static org.jboss.errai.codegen.util.Stmt.invokeStatic;
 import static org.jboss.errai.codegen.util.Stmt.loadLiteral;
 import static org.jboss.errai.codegen.util.Stmt.loadVariable;
@@ -37,8 +38,10 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Disposes;
@@ -46,6 +49,8 @@ import javax.enterprise.inject.Specializes;
 import javax.enterprise.inject.Stereotype;
 import javax.inject.Provider;
 
+import org.jboss.errai.codegen.ArithmeticExpression;
+import org.jboss.errai.codegen.ArithmeticOperator;
 import org.jboss.errai.codegen.InnerClass;
 import org.jboss.errai.codegen.Modifier;
 import org.jboss.errai.codegen.Parameter;
@@ -53,6 +58,8 @@ import org.jboss.errai.codegen.Statement;
 import org.jboss.errai.codegen.builder.AnonymousClassStructureBuilder;
 import org.jboss.errai.codegen.builder.BlockBuilder;
 import org.jboss.errai.codegen.builder.ClassStructureBuilder;
+import org.jboss.errai.codegen.builder.ContextualStatementBuilder;
+import org.jboss.errai.codegen.builder.impl.ArithmeticExpressionBuilder;
 import org.jboss.errai.codegen.builder.impl.ClassBuilder;
 import org.jboss.errai.codegen.builder.impl.ObjectBuilder;
 import org.jboss.errai.codegen.meta.HasAnnotations;
@@ -67,6 +74,7 @@ import org.jboss.errai.codegen.meta.impl.build.BuildMetaClass;
 import org.jboss.errai.codegen.util.Stmt;
 import org.jboss.errai.config.rebind.EnvUtil;
 import org.jboss.errai.config.util.ClassScanner;
+import org.jboss.errai.ioc.client.Bootstrapper;
 import org.jboss.errai.ioc.client.WindowInjectionContext;
 import org.jboss.errai.ioc.client.api.ContextualTypeProvider;
 import org.jboss.errai.ioc.client.api.EnabledByProperty;
@@ -91,11 +99,11 @@ import org.jboss.errai.ioc.rebind.ioc.graph.api.DependencyGraphBuilder;
 import org.jboss.errai.ioc.rebind.ioc.graph.api.DependencyGraphBuilder.Dependency;
 import org.jboss.errai.ioc.rebind.ioc.graph.api.DependencyGraphBuilder.InjectableType;
 import org.jboss.errai.ioc.rebind.ioc.graph.api.Injectable;
-import org.jboss.errai.ioc.rebind.ioc.graph.api.ProvidedInjectable;
 import org.jboss.errai.ioc.rebind.ioc.graph.api.Qualifier;
 import org.jboss.errai.ioc.rebind.ioc.graph.api.QualifierFactory;
 import org.jboss.errai.ioc.rebind.ioc.graph.impl.DependencyGraphBuilderImpl;
 import org.jboss.errai.ioc.rebind.ioc.graph.impl.InjectableHandle;
+import org.jboss.errai.ioc.rebind.ioc.injector.api.ExtensionTypeCallback;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.InjectableProvider;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.InjectionContext;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.WiringElementType;
@@ -103,6 +111,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gwt.core.client.GWT;
+import com.google.gwt.core.client.JavaScriptObject;
 
 import jsinterop.annotations.JsType;
 
@@ -150,6 +159,8 @@ public class IOCProcessor {
     log.debug("Found {} classes", allMetaClasses.size());
     final DependencyGraphBuilder graphBuilder = new DependencyGraphBuilderImpl(qualFactory, injectionContext.isAsync());
 
+    runExtensionCallbacks(allMetaClasses);
+    log.debug("Ran {} extension callbacks on all types {} types.", injectionContext.getExtensionTypeCallbacks().size(), allMetaClasses.size());
 
     addAllInjectableProviders(graphBuilder);
     processDependencies(allMetaClasses, graphBuilder);
@@ -175,19 +186,55 @@ public class IOCProcessor {
     declareAndRegisterFactories(processingContext, dependencyGraph, scopeContexts, scopeContextSet, registerFactoriesBody);
     final String contextManagerFieldName = declareContextManagerField(processingContext);
     declareWindowInjectionContextField(processingContext);
+    declareStaticLogger(processingContext);
     if (injectionContext.isAsync()) {
       declareAsyncBeanManagerSetupField(processingContext);
     }
 
     registerFactoriesBody.finish();
+    bootstrapContainer(processingContext, dependencyGraph, scopeContextSet, contextLocalVarInvocation, contextManagerFieldName);
+    log.debug("Processed factory GWT.create calls in {}ms", System.currentTimeMillis() - start);
+  }
 
+  private void bootstrapContainer(final IOCProcessingContext processingContext, final DependencyGraph dependencyGraph,
+          final Set<MetaClass> scopeContextSet, final Statement[] contextLocalVarInvocation,
+          final String contextManagerFieldName) {
     processingContext.getBlockBuilder()
       .appendAll(contextLocalVarDeclarations(scopeContextSet))
-      ._(loadVariable("this").invoke("registerFactories", (Object[]) contextLocalVarInvocation));
+      .append(loadVariable("logger").invoke("debug", "Registering factories with contexts."))
+      .append(declareVariable("start", long.class, currentTime()))
+      .append(loadVariable("this").invoke("registerFactories", (Object[]) contextLocalVarInvocation))
+      .append(loadVariable("logger").invoke("debug",
+              "Registered " + dependencyGraph.getNumberOfInjectables() + " factories in {}ms", subtractFromCurrentTime(loadVariable("start"))))
+      .append(loadVariable("logger").invoke("debug", "Adding contexts to context manager..."))
+      .append(loadVariable("start").assignValue(currentTime()));
     addContextsToContextManager(scopeContextSet, contextManagerFieldName, processingContext.getBlockBuilder());
+    processingContext.getBlockBuilder()
+      .append(loadVariable("logger").invoke("debug",
+            "Added " + scopeContextSet.size() + " contexts in {}ms", subtractFromCurrentTime(loadVariable("start"))))
+      .append(loadVariable("logger").invoke("debug", "Calling finishInit on " + ContextManager.class.getSimpleName()))
+      .append(loadVariable("start").assignValue(currentTime()));
     callFinishInitOnContextManager(contextManagerFieldName, processingContext.getBlockBuilder());
+    processingContext.getBlockBuilder()
+      .append(loadVariable("logger").invoke("debug",
+            "ContextManager#finishInit ran in {}ms", subtractFromCurrentTime(loadVariable("start"))));
+  }
 
-    log.debug("Processed factory GWT.create calls in {}ms", System.currentTimeMillis() - start);
+  private static ContextualStatementBuilder currentTime() {
+    return invokeStatic(System.class, "currentTimeMillis");
+  }
+
+  private static ArithmeticExpression subtractFromCurrentTime(final Statement toSubtract) {
+    return ArithmeticExpressionBuilder.create(currentTime(),
+            ArithmeticOperator.Subtraction, toSubtract);
+  }
+
+  private void runExtensionCallbacks(final Collection<MetaClass> allMetaClasses) {
+    for (final MetaClass clazz : allMetaClasses) {
+      for (final ExtensionTypeCallback callback : injectionContext.getExtensionTypeCallbacks()) {
+        callback.callback(clazz);
+      }
+    }
   }
 
   private void callFinishInitOnContextManager(final String contextManagerFieldName, final BlockBuilder<?> methodBody) {
@@ -195,12 +242,12 @@ public class IOCProcessor {
   }
 
   private void addAllInjectableProviders(final DependencyGraphBuilder graphBuilder) {
-    for (final InjectableHandle handle : injectionContext.getInjectableProviders().keySet()) {
-      graphBuilder.addExtensionInjectable(handle.getType(), handle.getQualifier(), Dependent.class, WiringElementType.DependentBean);
+    for (final Entry<InjectableHandle, InjectableProvider> entry : injectionContext.getInjectableProviders().entries()) {
+      graphBuilder.addExtensionInjectable(entry.getKey().getType(), entry.getKey().getQualifier(), entry.getValue());
     }
-    for (final InjectableHandle handle : injectionContext.getExactTypeInjectableProviders().keySet()) {
-      graphBuilder.addExtensionInjectable(handle.getType(), handle.getQualifier(), Dependent.class,
-              WiringElementType.DependentBean, WiringElementType.ExactTypeMatching);
+    for (final Entry<InjectableHandle, InjectableProvider> entry : injectionContext.getExactTypeInjectableProviders().entries()) {
+      graphBuilder.addExtensionInjectable(entry.getKey().getType(), entry.getKey().getQualifier(), entry.getValue(),
+              WiringElementType.ExactTypeMatching);
     }
   }
 
@@ -220,6 +267,15 @@ public class IOCProcessor {
       .finish();
 
     return contextManagerFieldName;
+  }
+
+  @SuppressWarnings("unchecked")
+  private void declareStaticLogger(IOCProcessingContext processingContext) {
+    processingContext.getBootstrapBuilder()
+      .privateField("logger", Logger.class)
+      .modifiers(Modifier.Static, Modifier.Final)
+      .initializesWith(invokeStatic(LoggerFactory.class, "getLogger", Bootstrapper.class))
+      .finish();
   }
 
   @SuppressWarnings("unchecked")
@@ -273,12 +329,7 @@ public class IOCProcessor {
         final MetaClass factoryClass = addFactoryDeclaration(injectable, processingContext);
         registerAsyncFactory(injectable, processingContext, curMethod, factoryClass);
       } else {
-        if (injectable.getInjectableType().equals(InjectableType.ExtensionProvided)) {
-          declareAndRegisterConcreteInjectable(injectable, processingContext, scopeContexts, curMethod);
-          registerFactoryBodyGeneratorForInjectionSite(injectable);
-        } else {
-          declareAndRegisterConcreteInjectable(injectable, processingContext, scopeContexts, curMethod);
-        }
+        declareAndRegisterConcreteInjectable(injectable, processingContext, scopeContexts, curMethod);
       }
     }
   }
@@ -337,20 +388,6 @@ public class IOCProcessor {
     }
 
     return loadVariable(handleVarName);
-  }
-
-  private void registerFactoryBodyGeneratorForInjectionSite(final Injectable injectable) {
-    final Collection<InjectableProvider> providers = new ArrayList<InjectableProvider>();
-    providers.addAll(injectionContext.getInjectableProviders().get(injectable.getHandle()));
-    providers.addAll(injectionContext.getExactTypeInjectableProviders().get(injectable.getHandle()));
-    if (providers.size() > 1) {
-      throw new RuntimeException("Multiple providers for " + injectable.getHandle() + ". An error should have been thrown in the graph builder.");
-    } else if (providers.isEmpty()) {
-      throw new RuntimeException("No providers for " + injectable.getHandle() + ". An error should have been thrown in the graph builder.");
-    }
-
-    final InjectableProvider provider = providers.iterator().next();
-    FactoryGenerator.registerCustomBodyGenerator(injectable.getFactoryName(), provider.getGenerator(((ProvidedInjectable) injectable).getInjectionSite()));
   }
 
   private void declareAndRegisterConcreteInjectable(final Injectable injectable,
@@ -517,35 +554,54 @@ public class IOCProcessor {
 
   private void processType(final MetaClass type, final DependencyGraphBuilder builder, final List<String> problems) {
     try {
-      if (isTypeInjectableCandidate(type)) {
-        if (isSimpleton(type)) {
-          builder.addInjectable(type, qualFactory.forSource(type), Dependent.class, InjectableType.Type,
-                  WiringElementType.DependentBean, WiringElementType.Simpleton);
-        } else if (isTypeInjectable(type, problems)) {
-          final Class<? extends Annotation> directScope = getScope(type);
-          final Injectable typeInjectable = builder.addInjectable(type, qualFactory.forSource(type),
-                  directScope, InjectableType.Type, getWiringTypes(type, directScope));
-          processInjectionPoints(typeInjectable, builder, problems);
-          maybeProcessAsProducer(builder, typeInjectable);
-          maybeProcessAsProvider(typeInjectable, builder);
+      if (isTypeAccessible(type)) {
+        if (type.isConcrete()) {
+          if (isSimpleton(type)) {
+            builder.addInjectable(type, qualFactory.forSource(type), Dependent.class, InjectableType.Type,
+                    WiringElementType.DependentBean, WiringElementType.Simpleton);
+          } else if (isTypeInjectable(type, problems)) {
+            final Class<? extends Annotation> directScope = getScope(type);
+            final Injectable typeInjectable = builder.addInjectable(type, qualFactory.forSource(type),
+                    directScope, InjectableType.Type, getWiringTypes(type, directScope));
+            processInjectionPoints(typeInjectable, builder, problems);
+            maybeProcessAsProducer(builder, type, typeInjectable);
+            maybeProcessAsProvider(typeInjectable, builder);
+          }
         }
-      } else if (type.isAnnotationPresent(JsType.class)) {
-        builder.addInjectable(type, qualFactory.forUniversallyQualified(), Dependent.class, InjectableType.JsType, WiringElementType.DependentBean);
+        else {
+          maybeProcessAsStaticOnlyProducer(builder, type);
+          if (isPublishableJsType(type)) {
+            builder.addInjectable(type, qualFactory.forUniversallyQualified(), Dependent.class, InjectableType.JsType, WiringElementType.DependentBean);
+          }
+        }
       }
     } catch (Throwable t) {
       throw new RuntimeException("A fatal error occurred while processing " + type.getFullyQualifiedName(), t);
     }
   }
 
-  private void maybeProcessAsProducer(final DependencyGraphBuilder builder, final Injectable typeInjectable) {
-    // TODO log error/warning for unused @Disposes methods?
-    final Collection<MetaMethod> disposesMethods = getAllDisposesMethods(typeInjectable.getInjectedType());
-    processProducerMethods(typeInjectable, builder, disposesMethods);
-    processProducerFields(typeInjectable, builder, disposesMethods);
+  private void maybeProcessAsStaticOnlyProducer(final DependencyGraphBuilder builder, final MetaClass type) {
+    maybeProcessAsProducer(builder, type, null);
   }
 
-  private boolean isTypeInjectableCandidate(final MetaClass type) {
-    return type.isPublic() && type.isConcrete() && (type.isStatic() || isTopLevel(type));
+  private boolean isPublishableJsType(final MetaClass type) {
+    final JsType jsType = type.getAnnotation(JsType.class);
+
+    return jsType != null && !jsType.isNative();
+  }
+
+  private boolean isTypeAccessible(final MetaClass type) {
+    return type.isPublic() && (isTopLevel(type) || (type.isStatic() && isEnclosingTypeAccessible(type)));
+  }
+
+  /**
+   * @param typeInjectable If null, only static members will be processed.
+   */
+  private void maybeProcessAsProducer(final DependencyGraphBuilder builder, final MetaClass producerType, final Injectable typeInjectable) {
+    // TODO log error/warning for unused @Disposes methods?
+    final Collection<MetaMethod> disposesMethods = getAllDisposesMethods(producerType, (typeInjectable == null));
+    processProducerMethods(typeInjectable, producerType, builder, disposesMethods);
+    processProducerFields(typeInjectable, producerType, builder, disposesMethods);
   }
 
   private boolean isTopLevel(MetaClass type) {
@@ -557,6 +613,22 @@ public class IOCProcessor {
       isTopLevel = false;
     }
     return isTopLevel;
+  }
+
+  private boolean isEnclosingTypeAccessible(final MetaClass type) {
+    boolean hasEnclosingClass = false;
+    Class<?> enclosing;
+    // Workaround for http://bugs.java.com/view_bug.do?bug_id=2210448
+    try {
+      enclosing = (type.asClass() == null ? null : type.asClass().getDeclaringClass());
+      hasEnclosingClass = true;
+    } catch (IncompatibleClassChangeError ex) {
+      enclosing = null;
+      hasEnclosingClass = true;
+    }
+
+    // Assume that the enclosing class is inaccessible if we can't access it because of an IncomaptibleClassChangeError
+    return !hasEnclosingClass || (enclosing != null && isTypeAccessible(MetaClassFactory.get(enclosing)));
   }
 
   private boolean isSimpleton(final MetaClass type) {
@@ -577,6 +649,10 @@ public class IOCProcessor {
       }
     }
 
+    if (!type.getMethodsAnnotatedWith(PostConstruct.class).isEmpty()) {
+      return false;
+    }
+
     final Collection<Class<? extends Annotation>> injectAnnos = injectionContext.getAnnotationsForElementType(WiringElementType.InjectionPoint);
     for (final Class<? extends Annotation> anno : injectAnnos) {
       if (!type.getFieldsAnnotatedWith(anno).isEmpty()) {
@@ -584,7 +660,8 @@ public class IOCProcessor {
       }
     }
 
-    return (type.getConstructor(new MetaClass[0]) != null);
+    final MetaConstructor noArgConstructor = type.getConstructor(new MetaClass[0]);
+    return noArgConstructor != null && (noArgConstructor.isPublic() || !type.isAssignableTo(JavaScriptObject.class));
   }
 
   private WiringElementType[] getWiringTypes(final MetaClass type, final Class<? extends Annotation> directScope) {
@@ -599,7 +676,7 @@ public class IOCProcessor {
       wiringTypes.add(WiringElementType.AlternativeBean);
     }
 
-    if (type.isAnnotationPresent(JsType.class)) {
+    if (isPublishableJsType(type)) {
       wiringTypes.add(WiringElementType.JsType);
     }
 
@@ -676,31 +753,48 @@ public class IOCProcessor {
     return null;
   }
 
-  private void processProducerMethods(final Injectable typeInjectable, final DependencyGraphBuilder builder, final Collection<MetaMethod> disposesMethods) {
-    final MetaClass type = typeInjectable.getInjectedType();
+  /**
+   * @param producerTypeInjectable If this parameter is null, only static methods will be processed.
+   */
+  private void processProducerMethods(final Injectable producerTypeInjectable, final MetaClass producerType,
+          final DependencyGraphBuilder builder, final Collection<MetaMethod> disposesMethods) {
+    final boolean staticOnly = (producerTypeInjectable == null);
     final Collection<Class<? extends Annotation>> producerAnnos = injectionContext.getAnnotationsForElementType(WiringElementType.ProducerElement);
     for (final Class<? extends Annotation> anno : producerAnnos) {
-      final List<MetaMethod> methods = type.getDeclaredMethodsAnnotatedWith(anno);
+      final List<MetaMethod> methods = producerType.getDeclaredMethodsAnnotatedWith(anno);
       for (final MetaMethod method : methods) {
-        final Class<? extends Annotation> directScope = getScope(method);
-        final WiringElementType[] wiringTypes = getWiringTypeForProducer(type, method, directScope);
-        final Injectable producedInjectable = builder.addInjectable(method.getReturnType(),
-                qualFactory.forSource(method), directScope, InjectableType.Producer, wiringTypes);
-        builder.addProducerMemberDependency(producedInjectable, typeInjectable.getInjectedType(), typeInjectable.getQualifier(), method);
-        final MetaParameter[] params = method.getParameters();
-        for (int i = 0; i < params.length; i++) {
-          final MetaParameter param = params[i];
-          builder.addProducerParamDependency(producedInjectable, param.getType(), qualFactory.forSink(param), i, param);
-        }
-
-        final Collection<MetaMethod> matchingDisposes = getMatchingMethods(method, disposesMethods);
-        if (matchingDisposes.size() > 1) {
-          // TODO descriptive message with names of disposers found.
-          throw new RuntimeException();
-        } else if (!matchingDisposes.isEmpty()) {
-          addDisposerDependencies(producedInjectable, matchingDisposes.iterator().next(), builder);
+        if (!staticOnly || method.isStatic()) {
+          processProducerMethod(producerTypeInjectable, producerType, builder, disposesMethods, method);
         }
       }
+    }
+  }
+
+  private void processProducerMethod(final Injectable producerTypeInjectable, final MetaClass producerType,
+          final DependencyGraphBuilder builder, final Collection<MetaMethod> disposesMethods, final MetaMethod method) {
+    final Class<? extends Annotation> directScope = getScope(method);
+    final WiringElementType[] wiringTypes = getWiringTypeForProducer(producerType, method, directScope);
+    final Injectable producedInjectable = builder.addInjectable(method.getReturnType(),
+            qualFactory.forSource(method), directScope, InjectableType.Producer, wiringTypes);
+    if (method.isStatic()) {
+      builder.addProducerMemberDependency(producedInjectable, producerType, method);
+    }
+    else {
+      builder.addProducerMemberDependency(producedInjectable, producerType, producerTypeInjectable.getQualifier(), method);
+    }
+
+    final MetaParameter[] params = method.getParameters();
+    for (int i = 0; i < params.length; i++) {
+      final MetaParameter param = params[i];
+      builder.addProducerParamDependency(producedInjectable, param.getType(), qualFactory.forSink(param), i, param);
+    }
+
+    final Collection<MetaMethod> matchingDisposes = getMatchingMethods(method, disposesMethods);
+    if (matchingDisposes.size() > 1) {
+      // TODO descriptive message with names of disposers found.
+      throw new RuntimeException();
+    } else if (!matchingDisposes.isEmpty()) {
+      addDisposerDependencies(producedInjectable, matchingDisposes.iterator().next(), builder);
     }
   }
 
@@ -719,9 +813,13 @@ public class IOCProcessor {
     return wiringTypes.toArray(new WiringElementType[wiringTypes.size()]);
   }
 
-  private Collection<MetaMethod> getAllDisposesMethods(final MetaClass type) {
+  private Collection<MetaMethod> getAllDisposesMethods(final MetaClass type, final boolean staticOnly) {
     final Collection<MetaMethod> disposers = new ArrayList<MetaMethod>();
     for (final MetaMethod method : type.getMethods()) {
+      if (staticOnly && !method.isStatic()) {
+        continue;
+      }
+
       final List<MetaParameter> disposerParams = method.getParametersAnnotatedWith(Disposes.class);
       if (disposerParams.size() > 1) {
         throw new RuntimeException("Found method " + method + " in " + method.getDeclaringClassName()
@@ -780,26 +878,43 @@ public class IOCProcessor {
     }
   }
 
-  private void processProducerFields(final Injectable concreteInjectable, final DependencyGraphBuilder builder, final Collection<MetaMethod> disposesMethods) {
-    final MetaClass type = concreteInjectable.getInjectedType();
+  /**
+   * @param producerInjectable If null then only static fields will be processed.
+   */
+  private void processProducerFields(final Injectable producerInjectable, final MetaClass producerType,
+          final DependencyGraphBuilder builder, final Collection<MetaMethod> disposesMethods) {
+    final boolean staticOnly = (producerInjectable == null);
     final Collection<Class<? extends Annotation>> producerAnnos = injectionContext.getAnnotationsForElementType(WiringElementType.ProducerElement);
     for (final Class<? extends Annotation> producerAnno : producerAnnos) {
-      final List<MetaField> fields = type.getFieldsAnnotatedWith(producerAnno);
+      final List<MetaField> fields = producerType.getFieldsAnnotatedWith(producerAnno);
       for (final MetaField field : fields) {
-        final Class<? extends Annotation> scopeAnno = getScope(field);
-        final Injectable producedInjectable = builder.addInjectable(field.getType(),
-                qualFactory.forSource(field), scopeAnno, InjectableType.Producer,
-                getWiringTypeForProducer(type, field, scopeAnno));
-        builder.addProducerMemberDependency(producedInjectable, concreteInjectable.getInjectedType(), concreteInjectable.getQualifier(), field);
-
-        final Collection<MetaMethod> matchingDisposers = getMatchingMethods(field, disposesMethods);
-        if (matchingDisposers.size() > 1) {
-          // TODO add descriptive error message.
-          throw new RuntimeException();
-        } else if (!matchingDisposers.isEmpty()) {
-          addDisposerDependencies(producedInjectable, matchingDisposers.iterator().next(), builder);
+        if (!staticOnly || field.isStatic()) {
+          processProducerField(producerInjectable, producerType, builder, disposesMethods, field);
         }
       }
+    }
+  }
+
+  private void processProducerField(final Injectable producerInjectable, final MetaClass producerType,
+          final DependencyGraphBuilder builder, final Collection<MetaMethod> disposesMethods, final MetaField field) {
+    final Class<? extends Annotation> scopeAnno = getScope(field);
+    final Injectable producedInjectable = builder.addInjectable(field.getType(),
+            qualFactory.forSource(field), scopeAnno, InjectableType.Producer,
+            getWiringTypeForProducer(producerType, field, scopeAnno));
+
+    if (field.isStatic()) {
+      builder.addProducerMemberDependency(producedInjectable, producerType, field);
+    }
+    else {
+      builder.addProducerMemberDependency(producedInjectable, producerInjectable.getInjectedType(), producerInjectable.getQualifier(), field);
+    }
+
+    final Collection<MetaMethod> matchingDisposers = getMatchingMethods(field, disposesMethods);
+    if (matchingDisposers.size() > 1) {
+      // TODO add descriptive error message.
+      throw new RuntimeException();
+    } else if (!matchingDisposers.isEmpty()) {
+      addDisposerDependencies(producedInjectable, matchingDisposers.iterator().next(), builder);
     }
   }
 
@@ -874,20 +989,55 @@ public class IOCProcessor {
   }
 
   private boolean isConstructable(final MetaClass type, final List<String> problems) {
+    final boolean explicitlyScoped = getDirectScope(type) != null;
     final List<MetaConstructor> injectableConstructors = getInjectableConstructors(type);
+    final MetaConstructor noArgConstructor = type.getConstructor(new MetaClass[0]);
 
     if (injectableConstructors.size() > 1) {
       problems.add(type.getFullyQualifiedName() + " has " + injectableConstructors.size() + " constructors annotated with @Inject.");
       return false;
-    } else if (injectableConstructors.size() == 1) {
-      if (scopeDoesNotRequireProxy(type) || type.getConstructor(new MetaClass[0]) != null) {
-        return true;
+    }
+    else {
+      if (injectableConstructors.size() == 1) {
+        final MetaConstructor injectConstructor = injectableConstructors.get(0);
+        final boolean instantiable = injectConstructor.isPublic() || !type.isAssignableTo(JavaScriptObject.class);
+        if (!instantiable) {
+          problems.add(String.format("Cannot access constructor for %s.", type.getFullyQualifiedName()));
+        }
+
+        if (scopeDoesNotRequireProxy(type)) {
+          return instantiable;
+        } else if (noArgConstructor == null || !(noArgConstructor.isPublic() || noArgConstructor.isProtected())) {
+          log.warn("The class {} must be proxiable but does not have an accessible no-argument constructor", type.getFullyQualifiedName());
+          final boolean injectConstructorProxiable = injectConstructor.isPublic() || injectConstructor.isProtected();
+          if (!injectConstructorProxiable) {
+            problems.add(String.format(
+                    "The class %s must be proxiable but has no injectable constructor or no-argument constructor accessible to subclasses.",
+                    type.getFullyQualifiedName()));
+          }
+
+          return instantiable && injectConstructorProxiable;
+        } else {
+          return instantiable;
+        }
       } else {
-        log.warn("The class {} must be proxiable but has no zero-argument constructors.", type.getFullyQualifiedName());
-        return true;
+        final boolean instantiable = noArgConstructor != null && (noArgConstructor.isPublic() || !type.isAssignableTo(JavaScriptObject.class));
+        final boolean proxiable = noArgConstructor != null && (noArgConstructor.isPublic() || noArgConstructor.isProtected());
+        boolean passesProxiability = scopeDoesNotRequireProxy(type) || proxiable;
+
+        if (explicitlyScoped) {
+          if (!instantiable) {
+            problems.add(String.format("Cannot access constructor for %s.", type.getFullyQualifiedName()));
+          }
+          if (!passesProxiability) {
+            problems.add(String.format(
+                    "%s must be proxiable but does not have a no-argument constructor accessible to subclasses.",
+                    type.getFullyQualifiedName()));
+          }
+        }
+
+        return instantiable && passesProxiability;
       }
-    } else {
-      return (type.getConstructor(new MetaClass[0]) != null);
     }
   }
 

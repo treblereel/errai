@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -47,7 +47,7 @@ public class LoadClassReference extends AbstractCallElement {
     try {
       nextOrReturn(writer, context, new ClassReference(metaClass));
     }
-    catch (GenerationException e) {
+    catch (final GenerationException e) {
       blameAndRethrow(e);
     }
   }
@@ -74,13 +74,8 @@ public class LoadClassReference extends AbstractCallElement {
     return getClassReference(metaClass, context, true);
   }
 
-  private static final RenderCacheStore<MetaType, String> CLASS_LITERAL_RENDER_CACHE =
-      new RenderCacheStore<MetaType, String>() {
-        @Override
-        public String getName() {
-          return "CLASS_LITERAL_RENDER_CACHE";
-        }
-      };
+  private static final RenderCacheStore<MetaType, String> CLASS_LITERAL_RENDER_CACHE = 
+          () -> "CLASS_LITERAL_RENDER_CACHE";
 
   public static String getClassReference(final MetaType metaClass, final Context context, final boolean typeParms) {
     final Map<MetaType, String> cacheStore = context.getRenderingCache(CLASS_LITERAL_RENDER_CACHE);
@@ -125,13 +120,8 @@ public class LoadClassReference extends AbstractCallElement {
     return buf.toString();
   }
 
-  private static final RenderCacheStore<MetaParameterizedType, String> PARMTYPE_LITERAL_RENDER_CACHE =
-          new RenderCacheStore<MetaParameterizedType, String>() {
-            @Override
-            public String getName() {
-              return "PARMTYPE_LITERAL_RENDER_CACHE";
-            }
-          };
+  private static final RenderCacheStore<MetaParameterizedType, String> PARMTYPE_LITERAL_RENDER_CACHE = 
+          () -> "PARMTYPE_LITERAL_RENDER_CACHE";
 
   private static String getClassReferencesForParameterizedTypes(final MetaParameterizedType parameterizedType,
                                                                 final Context context) {

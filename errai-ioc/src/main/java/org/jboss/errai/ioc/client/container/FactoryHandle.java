@@ -1,11 +1,11 @@
 /*
- * Copyright 2015 JBoss, by Red Hat, Inc
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -44,10 +44,10 @@ public interface FactoryHandle {
   Set<Class<?>> getAssignableTypes();
 
   /**
-   * @return This will be the literal class of a type that was type-injectable.
-   *         If the factory was for a producer method, this will be the return
-   *         type. If the factory was for a producer field, this will be for the
-   *         field type.
+   * @return This will be the literal class of a type that was type-injectable. If the factory was for a producer
+   *         method, this will be the return type. If the factory was for a producer field, this will be for the field
+   *         type. For a bean where the specific implementation type is unknown (such as for JsType) this will return
+   *         the type that was looked up.
    */
   Class<?> getActualType();
 
@@ -75,5 +75,10 @@ public interface FactoryHandle {
    * @return The name of the factory's bean, if it was annotated with {@link Named}.
    */
   String getBeanName();
+
+  /**
+   * @return True iff this factory's bean is available for lookup through the bean manager.
+   */
+  boolean isAvailableByLookup();
 
 }

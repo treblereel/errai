@@ -1,11 +1,11 @@
 /*
- * Copyright 2013 JBoss, by Red Hat, Inc
+ * Copyright (C) 2013 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@
 package org.jboss.errai.databinding.rebind;
 
 import static org.jboss.errai.codegen.util.Stmt.declareVariable;
+import static org.jboss.errai.codegen.util.Stmt.invokeStatic;
 import static org.jboss.errai.codegen.util.Stmt.loadLiteral;
 import static org.jboss.errai.codegen.util.Stmt.loadVariable;
 import static org.jboss.errai.codegen.util.Stmt.nestedCall;
@@ -25,6 +26,7 @@ import static org.jboss.errai.codegen.util.Stmt.throw_;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,13 +36,18 @@ import org.jboss.errai.codegen.Statement;
 import org.jboss.errai.codegen.builder.impl.ObjectBuilder;
 import org.jboss.errai.codegen.exception.GenerationException;
 import org.jboss.errai.codegen.meta.MetaClass;
+import org.jboss.errai.codegen.meta.MetaClassFactory;
 import org.jboss.errai.codegen.util.If;
 import org.jboss.errai.codegen.util.PrivateAccessUtil;
 import org.jboss.errai.codegen.util.Refs;
 import org.jboss.errai.codegen.util.Stmt;
+import org.jboss.errai.common.client.api.IsElement;
 import org.jboss.errai.common.client.ui.ElementWrapperWidget;
+import org.jboss.errai.common.client.ui.HasValue;
 import org.jboss.errai.databinding.client.BoundUtil;
+import org.jboss.errai.databinding.client.api.Convert;
 import org.jboss.errai.databinding.client.api.DataBinder;
+import org.jboss.errai.databinding.client.api.handler.list.BindableListChangeHandler;
 import org.jboss.errai.ioc.client.api.CodeDecorator;
 import org.jboss.errai.ioc.client.container.InitializationCallback;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCDecoratorExtension;
@@ -50,6 +57,7 @@ import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
 import org.jboss.errai.ui.shared.api.annotations.Bound;
 
 import com.google.gwt.dom.client.Element;
+import com.google.gwt.user.client.TakesValue;
 import com.google.gwt.user.client.ui.Widget;
 
 import jsinterop.annotations.JsType;
@@ -59,7 +67,8 @@ import jsinterop.annotations.JsType;
  *
  * @author Christian Sadilek <csadilek@redhat.com>
  */
-@CodeDecorator
+// Must run after TemplatedCodeDecorator
+@CodeDecorator(order=2)
 public class BoundDecorator extends IOCDecoratorExtension<Bound> {
 
   final Set<MetaClass> processedTypes = Collections.newSetFromMap(new ConcurrentHashMap<MetaClass, Boolean>());
@@ -113,24 +122,32 @@ public class BoundDecorator extends IOCDecoratorExtension<Bound> {
           statements.add(If.isNull(component).append(widgetInit).finish());
         }
       }
-      else if (componentType.isAssignableTo(Element.class)) {
-        component = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget", component);
-      }
       else if (componentType.isAnnotationPresent(JsType.class)) {
-        component = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget", Stmt.invokeStatic(BoundUtil.class, "asElement", component));
+        if (componentType.isAssignableTo(HasValue.class)) {
+          final MetaClass valueType = componentType.getMethod("getValue", new Class[0]).getReturnType();
+          component = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget",
+                  Stmt.invokeStatic(BoundUtil.class, "asElement", component), Stmt.loadLiteral(valueType));
+        }
+        else {
+          component = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget", Stmt.invokeStatic(BoundUtil.class, "asElement", component));
+        }
       }
-      else {
+      else if (!(componentType.isAssignableTo(TakesValue.class)
+              || componentType.isAssignableTo(BindableListChangeHandler.class)
+              || componentType.isAssignableTo(Element.class)
+              || componentType.isAnnotationPresent(JsType.class)
+              || componentType.isAssignableTo(IsElement.class))) {
         throw new GenerationException("@Bound field or method " + decorable.getName()
             + " in class " + targetClass
-            + " must provide a widget or DOM element type but provides: "
+            + " must be assignable to Widget, TakesValue, or a DOM element type but provides: "
             + componentType.getFullyQualifiedName());
       }
 
-
       // Generate the binding
-      Statement conv = bound.converter().equals(Bound.NO_CONVERTER.class) ? loadLiteral(null) : Stmt.newObject(bound.converter());
+      Statement conv = coverterStatement(bound, decorable.getType(),
+              DataBindingValidator.getPropertyType(binderLookup.getDataModelType(), property));
       Statement onKeyUp = Stmt.load(bound.onKeyUp());
-      statements.add(Stmt.loadVariable("binder").invoke("bind", component, property, conv, onKeyUp));
+      statements.add(Stmt.loadVariable("binder").invoke("bind", component, property, conv, loadLiteral(null), onKeyUp));
     }
     else {
       throw new GenerationException("No @Model or @AutoBound data binder found for @Bound field or method "
@@ -143,7 +160,29 @@ public class BoundDecorator extends IOCDecoratorExtension<Bound> {
     controller.addInitializationStatements(statements);
     if (!hasRunForType) {
       controller.addDestructionStatements(Collections.<Statement> singletonList(
-              nestedCall(Stmt.castTo(DataBinder.class, binderLookup.getValueAccessor())).invoke("unbind")));
+              nestedCall(controller.getReferenceStmt(DataBindingUtil.BINDER_VAR_NAME, DataBinder.class)).invoke("unbind")));
+    }
+  }
+
+  private Statement coverterStatement(final Bound bound, final MetaClass boundType, final MetaClass propertyType) {
+    if (bound.converter().equals(Bound.NO_CONVERTER.class)) {
+      final Optional<MetaClass> valueType;
+      if (boundType.isAssignableTo(TakesValue.class)) {
+        valueType = Optional.ofNullable(boundType.getMethod("getValue", new Class[0]).getReturnType());
+      }
+      else if (boundType.isAssignableTo(BindableListChangeHandler.class)) {
+        valueType = Optional.ofNullable(MetaClassFactory.get(List.class));
+      }
+      else {
+        valueType = Optional.empty();
+      }
+
+      return valueType
+              .map(type -> invokeStatic(Convert.class, "getConverter", loadLiteral(propertyType), loadLiteral(type)))
+              .orElse(loadLiteral(null));
+    }
+    else {
+      return Stmt.newObject(bound.converter());
     }
   }
 

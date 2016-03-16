@@ -1,11 +1,11 @@
 /*
- * Copyright 2015 JBoss, by Red Hat, Inc
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,6 +26,7 @@ import static org.jboss.errai.codegen.util.Stmt.if_;
 import static org.jboss.errai.codegen.util.Stmt.invokeStatic;
 import static org.jboss.errai.codegen.util.Stmt.load;
 import static org.jboss.errai.codegen.util.Stmt.loadLiteral;
+import static org.jboss.errai.codegen.util.Stmt.loadStatic;
 import static org.jboss.errai.codegen.util.Stmt.loadVariable;
 import static org.jboss.errai.codegen.util.Stmt.nestedCall;
 import static org.jboss.errai.codegen.util.Stmt.newObject;
@@ -40,6 +41,8 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Default;
 import javax.inject.Qualifier;
 
 import org.jboss.errai.codegen.BooleanOperator;
@@ -66,6 +69,7 @@ import org.jboss.errai.codegen.meta.MetaMethod;
 import org.jboss.errai.codegen.meta.MetaParameter;
 import org.jboss.errai.codegen.meta.impl.build.BuildMetaClass;
 import org.jboss.errai.codegen.util.Stmt;
+import org.jboss.errai.ioc.client.QualifierUtil;
 import org.jboss.errai.ioc.client.api.ActivatedBy;
 import org.jboss.errai.ioc.client.api.EntryPoint;
 import org.jboss.errai.ioc.client.container.BeanActivator;
@@ -84,6 +88,8 @@ import org.jboss.errai.ioc.rebind.ioc.graph.api.DependencyGraphBuilder.ParamDepe
 import org.jboss.errai.ioc.rebind.ioc.graph.api.Injectable;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.FactoryController;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.InjectionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -99,6 +105,8 @@ import com.google.gwt.core.ext.TreeLogger;
  * @author Max Barkley <mbarkley@redhat.com>
  */
 public abstract class AbstractBodyGenerator implements FactoryBodyGenerator {
+
+  private static final Logger logger = LoggerFactory.getLogger(AbstractBodyGenerator.class);
 
   protected static Multimap<DependencyType, Dependency> separateByType(final Collection<Dependency> dependencies) {
     final Multimap<DependencyType, Dependency> separated = HashMultimap.create();
@@ -324,6 +332,11 @@ public abstract class AbstractBodyGenerator implements FactoryBodyGenerator {
 
         body.finish();
       }
+      else if (!(method.isPublic() || method.isPrivate() || method.isProtected()) && injectable.requiresProxy()) {
+        logger.warn("The normal scoped type, " + injectable.getInjectedType().getFullyQualifiedName()
+                + ", has a package-private method, " + method.getName()
+                + ", that cannot be proxied. Invoking this method on an injected instance may cause errors.");
+      }
     }
   }
 
@@ -334,9 +347,6 @@ public abstract class AbstractBodyGenerator implements FactoryBodyGenerator {
               getParametersForDeclaration(method));
     } else if (method.isProtected()) {
       methodBuilder = proxyImpl.protectedMethod(method.getReturnType().getErased(), method.getName(),
-              getParametersForDeclaration(method));
-    } else if (!method.isPrivate()) {
-      methodBuilder = proxyImpl.packageMethod(method.getReturnType().getErased(), method.getName(),
               getParametersForDeclaration(method));
     } else {
       final String methodType = (method.isProtected()) ? "private" : "package private";
@@ -367,7 +377,7 @@ public abstract class AbstractBodyGenerator implements FactoryBodyGenerator {
 
   private boolean shouldProxyMethod(final MetaMethod method, final Multimap<String, MetaMethod> proxiedMethodsByName) {
     return (method.getDeclaringClass() != null && method.getDeclaringClass().isInterface())
-            || !method.isStatic() && !method.isPrivate() && !method.isFinal()
+            || !method.isStatic() && (method.isPublic() || method.isProtected()) && !method.isFinal()
                     && methodIsNotFromObjectUnlessHashCode(method)
             && typesInSignatureAreVisible(method)
             && isNotAlreadyProxied(method, proxiedMethodsByName);
@@ -677,18 +687,8 @@ public abstract class AbstractBodyGenerator implements FactoryBodyGenerator {
     return controller.getDestructionStatements();
   }
 
-  private void implementGetHandle(final ClassStructureBuilder<?> bodyBlockBuilder, final Injectable injectable) {
-    final Statement newObject;
-    if (injectable.getInjectedType().isAnnotationPresent(ActivatedBy.class)) {
-      final Class<? extends BeanActivator> activatorType = injectable.getInjectedType().getAnnotation(ActivatedBy.class).value();
-      newObject = newObject(FactoryHandleImpl.class, loadLiteral(injectable.getInjectedType()),
-              injectable.getFactoryName(), injectable.getScope(), isEager(injectable.getInjectedType()),
-              injectable.getBeanName(), loadLiteral(activatorType));
-    } else {
-      newObject = newObject(FactoryHandleImpl.class, loadLiteral(injectable.getInjectedType()),
-              injectable.getFactoryName(), injectable.getScope(), isEager(injectable.getInjectedType()),
-              injectable.getBeanName());
-    }
+  protected void implementGetHandle(final ClassStructureBuilder<?> bodyBlockBuilder, final Injectable injectable) {
+    final Statement newObject = generateFactoryHandleStatement(injectable);
     bodyBlockBuilder.privateField("handle", FactoryHandleImpl.class).initializesWith(newObject).finish();
     final ConstructorBlockBuilder<?> con = bodyBlockBuilder.publicConstructor();
     for (final MetaClass assignableType : getAllAssignableTypes(injectable.getInjectedType())) {
@@ -704,13 +704,28 @@ public abstract class AbstractBodyGenerator implements FactoryBodyGenerator {
             .finish();
   }
 
-  private Object isEager(final MetaClass injectedType) {
+  protected Statement generateFactoryHandleStatement(final Injectable injectable) {
+    final Statement newObject;
+    if (injectable.getInjectedType().isAnnotationPresent(ActivatedBy.class)) {
+      final Class<? extends BeanActivator> activatorType = injectable.getInjectedType().getAnnotation(ActivatedBy.class).value();
+      newObject = newObject(FactoryHandleImpl.class, loadLiteral(injectable.getInjectedType()),
+              injectable.getFactoryName(), injectable.getScope(), isEager(injectable.getInjectedType()),
+              injectable.getBeanName(), loadLiteral(activatorType));
+    } else {
+      newObject = newObject(FactoryHandleImpl.class, loadLiteral(injectable.getInjectedType()),
+              injectable.getFactoryName(), injectable.getScope(), isEager(injectable.getInjectedType()),
+              injectable.getBeanName());
+    }
+    return newObject;
+  }
+
+  protected static Object isEager(final MetaClass injectedType) {
     return injectedType.isAnnotationPresent(EntryPoint.class) ||
             // TODO review this before adding any scopes other than app-scoped and depdendent
             (!injectedType.isAnnotationPresent(Dependent.class) && hasStartupAnnotation(injectedType));
   }
 
-  private boolean hasStartupAnnotation(final MetaClass injectedType) {
+  protected static boolean hasStartupAnnotation(final MetaClass injectedType) {
     for (final Annotation anno : injectedType.getAnnotations()) {
       if (anno.annotationType().getName().equals("javax.ejb.Startup")) {
         return true;
@@ -720,8 +735,14 @@ public abstract class AbstractBodyGenerator implements FactoryBodyGenerator {
     return false;
   }
 
-  private Object annotationLiteral(final Annotation qual) {
-    return LiteralFactory.getLiteral(qual);
+  protected static Statement annotationLiteral(final Annotation qual) {
+    if (qual.annotationType().equals(Any.class)) {
+      return loadStatic(QualifierUtil.class, "ANY_ANNOTATION");
+    } else if (qual.annotationType().equals(Default.class)) {
+      return loadStatic(QualifierUtil.class, "DEFAULT_ANNOTATION");
+    } else {
+      return LiteralFactory.getLiteral(qual);
+    }
   }
 
   protected Collection<Annotation> getQualifiers(final HasAnnotations injectedType) {
@@ -735,7 +756,7 @@ public abstract class AbstractBodyGenerator implements FactoryBodyGenerator {
     return annos;
   }
 
-  private Collection<MetaClass> getAllAssignableTypes(final MetaClass injectedType) {
+  protected static Collection<MetaClass> getAllAssignableTypes(final MetaClass injectedType) {
     return injectedType.getAllSuperTypesAndInterfaces();
   }
 

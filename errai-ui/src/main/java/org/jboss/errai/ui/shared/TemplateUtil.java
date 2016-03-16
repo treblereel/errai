@@ -1,11 +1,11 @@
 /*
- * Copyright 2012 JBoss, by Red Hat, Inc
+ * Copyright (C) 2012 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.ui.shared;
 
 import java.util.Collection;
@@ -40,14 +41,16 @@ import com.google.gwt.core.client.JsArray;
 import com.google.gwt.core.shared.GWT;
 import com.google.gwt.dom.client.Element;
 import com.google.gwt.dom.client.Node;
-import com.google.gwt.event.logical.shared.AttachEvent;
 import com.google.gwt.event.shared.EventHandler;
 import com.google.gwt.user.client.DOM;
 import com.google.gwt.user.client.EventListener;
 import com.google.gwt.user.client.ui.Composite;
 import com.google.gwt.user.client.ui.HasText;
+import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.UIObject;
 import com.google.gwt.user.client.ui.Widget;
+
+import jsinterop.annotations.JsType;
 
 /**
  * Errai UI Runtime Utility for handling {@link Template} composition.
@@ -149,7 +152,10 @@ public final class TemplateUtil {
     }
   }
 
-  private static native <T extends JavaScriptObject> T nativeCast(Object element) /*-{
+  /**
+   * Only works for native {@link JsType JsTypes} and {@link JavaScriptObject JavaScriptObjects}.
+   */
+  public static native <T> T nativeCast(Object element) /*-{
     return element;
   }-*/;
 
@@ -163,30 +169,54 @@ public final class TemplateUtil {
   }
 
   public static void initTemplated(Object templated, Element wrapped, Collection<Widget> dataFields) {
-    TemplateWidgetMapper.put(templated, new TemplateWidget(wrapped, dataFields));
+    final TemplateWidget widget = new TemplateWidget(wrapped, dataFields);
+    TemplateWidgetMapper.put(templated, widget);
     StyleBindingsRegistry.get().updateStyles(templated);
+    widget.onAttach();
+    RootPanel.detachOnWindowClose(widget);
+    TemplateInitializedEvent.fire(widget);
+  }
+
+  public static void cleanupTemplated(Object templated) {
+    final TemplateWidget templateWidget = TemplateWidgetMapper.get(templated);
+    TemplateWidgetMapper.remove(templated);
+    if (RootPanel.isInDetachList(templateWidget)) {
+      RootPanel.detachNow(templateWidget);
+    }
   }
 
   public static void initWidget(Composite component, Element wrapped, Collection<Widget> dataFields) {
     if (!(component instanceof ListWidget)) {
       initWidgetNative(component, new TemplateWidget(wrapped, dataFields));
     }
-
-    DOM.setEventListener(component.getElement(), component);
+    if (!component.isAttached()) {
+      onAttachNative(component);
+      RootPanel.detachOnWindowClose(component);
+    }
     StyleBindingsRegistry.get().updateStyles(component);
-    AttachEvent.fire(component, true);
     TemplateInitializedEvent.fire(component);
   }
+
+  public static void cleanupWidget(Composite component) {
+    if (RootPanel.isInDetachList(component)) {
+      RootPanel.detachNow(component);
+    }
+  }
+
+  private static native void onAttachNative(Widget w) /*-{
+    w.@com.google.gwt.user.client.ui.Widget::onAttach()();
+  }-*/;
 
   private static native void initWidgetNative(Composite component, Widget wrapped) /*-{
     component.@com.google.gwt.user.client.ui.Composite::initWidget(Lcom/google/gwt/user/client/ui/Widget;)(wrapped);
   }-*/;
 
   private static Map<String, Element> templateRoots = new HashMap<String, Element>();
-  public static Element getRootTemplateElement(String templateContents, final String templateFileName, final String rootField) {
+
+  public static Element getRootTemplateParentElement(String templateContents, final String templateFileName, final String rootField) {
     String key = templateFileName + "#" + rootField;
     if (templateRoots.containsKey(key)) {
-      return cloneWithEmptyParent(templateRoots.get(key));
+      return cloneIntoNewParent(templateRoots.get(key));
     }
 
     Element parserDiv = DOM.createDiv();
@@ -226,8 +256,12 @@ public final class TemplateUtil {
     }
     else {
       templateRoots.put(key, templateRoot);
-      return cloneWithEmptyParent(templateRoot);
+      return cloneIntoNewParent(templateRoot);
     }
+  }
+
+  public static Element getRootTemplateElement(final Element rootParent) {
+    return firstNonMetaElement(rootParent);
   }
 
   /*
@@ -342,14 +376,26 @@ public final class TemplateUtil {
     return dataFields;
   }
 
-  public static void setupNativeEventListener(Composite component, Element element, EventListener listener,
+  public static void setupNativeEventListener(Object component, ElementWrapperWidget wrapper, EventListener listener,
+          int eventsToSink) {
+
+    if (wrapper == null) {
+      throw new RuntimeException("A native event source was specified in " + component.getClass().getName()
+              + " but the corresponding data-field does not exist!");
+    }
+    wrapper.setEventListener(eventsToSink, listener);
+  }
+
+  /**
+   * Use this for elements that are not wrapped by any widgets (including the ElementWrapperWidget).
+   */
+  public static void setupNativeEventListener(Object component, Element element, EventListener listener,
           int eventsToSink) {
 
     if (element == null) {
       throw new RuntimeException("A native event source was specified in " + component.getClass().getName()
               + " but the corresponding data-field does not exist!");
     }
-    // These casts must stay to maintain compatibility with GWT 2.5.1
     DOM.setEventListener(element, listener);
     DOM.sinkEvents(element, eventsToSink);
   }
@@ -387,11 +433,11 @@ public final class TemplateUtil {
     return elem.attributes;
   }-*/;
 
-  private static Element cloneWithEmptyParent(Element element) {
+  private static Element cloneIntoNewParent(Element element) {
     Element parent = DOM.createDiv();
     Element clone = DOM.clone(element, true);
     parent.appendChild(clone);
-    return clone;
+    return parent;
   }
 
   private final static class TemplateRequest {

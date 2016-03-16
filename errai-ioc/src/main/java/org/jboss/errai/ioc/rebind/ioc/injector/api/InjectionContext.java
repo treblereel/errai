@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,8 +45,10 @@ import org.jboss.errai.ioc.rebind.ioc.bootstrapper.FactoryGenerator;
 import org.jboss.errai.ioc.rebind.ioc.bootstrapper.IOCProcessingContext;
 import org.jboss.errai.ioc.rebind.ioc.bootstrapper.IOCProcessor;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCDecoratorExtension;
+import org.jboss.errai.ioc.rebind.ioc.extension.IOCExtensionConfigurator;
 import org.jboss.errai.ioc.rebind.ioc.graph.api.QualifierFactory;
 import org.jboss.errai.ioc.rebind.ioc.graph.impl.DefaultQualifierFactory;
+import org.jboss.errai.ioc.rebind.ioc.graph.impl.FactoryNameGenerator;
 import org.jboss.errai.ioc.rebind.ioc.graph.impl.InjectableHandle;
 import org.jboss.errai.reflections.util.SimplePackageFilter;
 import org.slf4j.Logger;
@@ -75,6 +77,8 @@ public class InjectionContext {
   private final Multimap<WiringElementType, Class<? extends Annotation>> elementBindings = HashMultimap.create();
   private final Multimap<InjectableHandle, InjectableProvider> injectableProviders = HashMultimap.create();
   private final Multimap<InjectableHandle, InjectableProvider> exactTypeInjectableProviders = HashMultimap.create();
+
+  private final Collection<ExtensionTypeCallback> extensionTypeCallbacks = new ArrayList<ExtensionTypeCallback>();
 
   private final boolean async;
 
@@ -162,7 +166,7 @@ public class InjectionContext {
    *          Contains the type and qualifier that the given provider satisfies.
    * @param provider
    *          The
-   *          {@link InjectableProvider#getGenerator(org.jboss.errai.ioc.rebind.ioc.graph.api.ProvidedInjectable.InjectionSite)}
+   *          {@link InjectableProvider#getInjectable(org.jboss.errai.ioc.rebind.ioc.graph.api.ProvidedInjectable.InjectionSite, FactoryNameGenerator)}
    *          will be called for every injection site satisified by the given
    *          handle. The returned {@link FactoryBodyGenerator} will be used to
    *          generate factories specific to the given injection sites.
@@ -182,13 +186,29 @@ public class InjectionContext {
    *          satisfies.
    * @param provider
    *          The
-   *          {@link InjectableProvider#getGenerator(org.jboss.errai.ioc.rebind.ioc.graph.api.ProvidedInjectable.InjectionSite)}
+   *          {@link InjectableProvider#getInjectable(org.jboss.errai.ioc.rebind.ioc.graph.api.ProvidedInjectable.InjectionSite, FactoryNameGenerator)}
    *          will be called for every injection site satisified by the given
    *          handle. The returned {@link FactoryBodyGenerator} will be used to
    *          generate factories specific to the given injection sites.
    */
   public void registerExactTypeInjectableProvider(final InjectableHandle handle, final InjectableProvider provider) {
     exactTypeInjectableProviders.put(handle, provider);
+  }
+
+  /**
+   * An {@link ExtensionTypeCallback} registered with this method will be called for every type processed the Errai IoC
+   * before the dependency graph is built. This gives {@link IOCExtensionConfigurator IOCExtensionConfigurators} a way
+   * of registering {@link #registerInjectableProvider(InjectableHandle, InjectableProvider) injectable providers}
+   * dynamically.
+   *
+   * @param callback Never null.
+   */
+  public void registerExtensionTypeCallback(final ExtensionTypeCallback callback) {
+    extensionTypeCallbacks.add(callback);
+  }
+
+  public Collection<ExtensionTypeCallback> getExtensionTypeCallbacks() {
+    return Collections.unmodifiableCollection(extensionTypeCallbacks);
   }
 
   public Multimap<InjectableHandle, InjectableProvider> getInjectableProviders() {

@@ -1,19 +1,19 @@
-/**
- * JBoss, Home of Professional Open Source
- * Copyright 2014, Red Hat, Inc. and/or its affiliates, and individual
- * contributors by the @authors tag. See the copyright.txt in the
- * distribution for a full listing of individual contributors.
+/*
+ * Copyright (C) 2014 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.security.test.style.client.local;
 
 import static org.jboss.errai.enterprise.client.cdi.api.CDI.*;
@@ -21,6 +21,7 @@ import static org.jboss.errai.enterprise.client.cdi.api.CDI.*;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.jboss.errai.common.client.dom.HTMLElement;
 import org.jboss.errai.enterprise.client.cdi.AbstractErraiCDITest;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ioc.client.container.SyncBeanManager;
@@ -35,6 +36,7 @@ import org.jboss.errai.security.test.style.client.local.res.TemplatedStyleWidget
 import org.jboss.errai.ui.shared.api.style.StyleBindingsRegistry;
 import org.junit.Test;
 
+import com.google.gwt.dom.client.Element;
 import com.google.gwt.user.client.ui.Anchor;
 import com.google.gwt.user.client.ui.Widget;
 
@@ -169,6 +171,7 @@ public class SecurityStyleTest extends AbstractErraiCDITest {
     });
   }
 
+  @Test
   public void testStyleBindingAppliedCorrectlyWithProvidedRoles() throws Exception {
     asyncTest();
     addPostInitTask(new Runnable() {
@@ -182,8 +185,46 @@ public class SecurityStyleTest extends AbstractErraiCDITest {
     });
   }
 
+  @Test
+  public void testStyleBindingOnGwtUserElement() throws Exception {
+    asyncTest();
+    addPostInitTask(new Runnable() {
+
+      @Override
+      public void run() {
+        securityContext.setCachedUser(regularUser);
+        assertTrue(hasStyle(RestrictedAccess.CSS_CLASS_NAME, testWidget.getAdminGwtDivElement()));
+        finishTest();
+      }
+    });
+  }
+
+  @Test
+  public void testStyleBindingOnErraiElement() throws Exception {
+    asyncTest();
+    addPostInitTask(new Runnable() {
+
+      @Override
+      public void run() {
+        securityContext.setCachedUser(regularUser);
+        assertTrue(hasStyle(RestrictedAccess.CSS_CLASS_NAME, testWidget.getAdminErraiDivElement()));
+        finishTest();
+      }
+    });
+  }
+
   private boolean hasStyle(final String name, final Widget widget) {
     String cssClasses = widget.getElement().getAttribute("class");
+    return cssClasses != null && cssClasses.contains(name);
+  }
+
+  private boolean hasStyle(final String name, final Element element) {
+    String cssClasses = element.getAttribute("class");
+    return cssClasses != null && cssClasses.contains(name);
+  }
+
+  private boolean hasStyle(final String name, final HTMLElement element) {
+    String cssClasses = element.getAttribute("class");
     return cssClasses != null && cssClasses.contains(name);
   }
 }

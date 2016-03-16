@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,10 +18,10 @@ package org.jboss.errai.codegen.meta;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.jboss.errai.codegen.util.GenUtil;
 
@@ -78,49 +78,35 @@ public abstract class MetaMethod extends AbstractHasAnnotations implements MetaC
     return o instanceof MetaMethod && ((MetaMethod)o).hashString().equals(hashString());
   }
 
-  @Override
-  public final <A extends Annotation> A getAnnotation(Class<A> annotation) {
-    for (Annotation a : getAnnotations()) {
-      if (a.annotationType().equals(annotation))
-        return (A) a;
-    }
-    return null;
-  }
-
   public List<MetaParameter> getParametersAnnotatedWith(Class<? extends Annotation> annotation) {
-    final List<MetaParameter> metaParameters = new ArrayList<MetaParameter>();
-    for (final MetaParameter parameter : getParameters()) {
-      if (parameter.isAnnotationPresent(annotation)) {
-        metaParameters.add(parameter);
-      }
-    }
-    return Collections.unmodifiableList(metaParameters);
+    return Arrays.stream(getParameters())
+            .filter(p -> p.isAnnotationPresent(annotation))
+            .collect(Collectors.collectingAndThen(Collectors.toList(), l -> Collections.unmodifiableList(l)));
   }
-
 
   public Method asMethod() {
     try {
       final Class cls = Class.forName(getDeclaringClass().getFullyQualifiedName());
       final Class[] parms = MetaClassFactory.asClassArray(getParameters());
 
-      for (Method m : cls.getDeclaredMethods()) {
+      for (final Method m : cls.getDeclaredMethods()) {
         if (m.getName().equals(getName()) && Arrays.equals(parms, m.getParameterTypes())) {
           return m;
         }
       }
       return null;
     }
-    catch (Throwable t) {
+    catch (final Throwable t) {
       return null;
     }
   }
   
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    Annotation[] annos = getAnnotations();
+    final StringBuilder sb = new StringBuilder();
+    final Annotation[] annos = getAnnotations();
     if (annos != null) {
-      for (Annotation anno : annos) {
+      for (final Annotation anno : annos) {
         sb.append(anno.toString()).append(" ");
       }
     }

@@ -1,12 +1,12 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *       x
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,7 +44,6 @@ import org.jboss.errai.codegen.meta.impl.AbstractMetaClass;
 import org.jboss.errai.codegen.util.GenUtil;
 import org.jboss.errai.codegen.util.PrettyPrinter;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 
 /**
@@ -85,9 +84,11 @@ public class BuildMetaClass extends AbstractMetaClass<Object> implements Builder
   public BuildMetaClass(final Context context, final String name) {
     super(null);
     this.className = name;
-    this.context = Context.create(context);
-    this.context.addVariable(Variable.create("this", this));
-    context.attachClass(this);
+    if (context != null) {
+      this.context = Context.create(context);
+      this.context.addVariable(Variable.create("this", this));
+      context.attachClass(this);
+    }
   }
 
   private BuildMetaClass shallowCopy() {
@@ -217,18 +218,11 @@ public class BuildMetaClass extends AbstractMetaClass<Object> implements Builder
   @Override
   public MetaField[] getFields() {
     if (_fieldsCache == null) {
-      final List<MetaField> publicFields = Lists.newArrayList();
-      for (BuildMetaField field : fields) {
-        if (field.isPublic()) {
-          publicFields.add(field);
-        }
-      }
-      _fieldsCache = publicFields.toArray(new MetaField[publicFields.size()]);
+      _fieldsCache = fields.stream().filter(field -> field.isPublic()).toArray(size -> new MetaField[size]);
       if (superClass != null) {
         _fieldsCache = ObjectArrays.concat(_fieldsCache, superClass.getFields(), MetaField.class);
       }
     }
-
     return _fieldsCache;
   }
 
@@ -245,13 +239,7 @@ public class BuildMetaClass extends AbstractMetaClass<Object> implements Builder
 
   @Override
   public MetaField getField(final String name) {
-    for (final MetaField field : fields) {
-      if (field.getName().equals(name)) {
-        return field;
-      }
-    }
-
-    return null;
+    return fields.stream().filter(f -> f.getName().equals(name)).findFirst().orElse(null);
   }
 
   @Override
@@ -536,25 +524,6 @@ public class BuildMetaClass extends AbstractMetaClass<Object> implements Builder
     return super.getBestMatchingConstructor(parameters);
   }
 
-  private MetaMethod findReifiedVersion(final MetaMethod formOf) {
-    for (final BuildMetaMethod method : methods) {
-      if (method.getReifiedFormOf().equals(formOf)) {
-        return method;
-      }
-    }
-    return null;
-  }
-
-  private MetaConstructor findReifiedVersion(final MetaConstructor formOf) {
-    for (final BuildMetaConstructor method : constructors) {
-      if (method.getReifiedFormOf().equals(formOf)) {
-        return method;
-      }
-    }
-    return null;
-  }
-
-
   @Override
   public MetaClass asArrayOf(final int dimensions) {
     final BuildMetaClass copy = shallowCopy();
@@ -583,6 +552,10 @@ public class BuildMetaClass extends AbstractMetaClass<Object> implements Builder
   }
 
   public String toJavaString(final Context context) {
+    if (context == null) {
+      throw new IllegalArgumentException("Cannot generate Java String with null Context.");
+    }
+
     if (generatedCache != null) return generatedCache;
 
     final StringBuilder buf = new StringBuilder(512);
@@ -719,6 +692,10 @@ public class BuildMetaClass extends AbstractMetaClass<Object> implements Builder
   }
 
   public String membersToString() {
+    if (context == null) {
+      throw new IllegalStateException("Cannot call membersToString when no context is set.");
+    }
+
     final StringBuilder buf = new StringBuilder(512);
 
     final Iterator<InnerClass> innerClassIterator = innerClasses.iterator();
@@ -800,10 +777,7 @@ public class BuildMetaClass extends AbstractMetaClass<Object> implements Builder
     GenUtil.setPermissiveMode(_permissiveMode);
 
     if (!_permissiveMode) {
-      // verification pass.
-      for (final Builder builder : toBuild) {
-        builder.toJavaString();
-      }
+      toBuild.stream().forEach(builder -> builder.toJavaString());
     }
     return fieldRenderBuffer;
   }

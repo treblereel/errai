@@ -1,11 +1,11 @@
 /*
- * Copyright 2015 JBoss, by Red Hat, Inc
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -434,11 +434,6 @@ public class AsyncBeanManagerImpl implements AsyncBeanManager, BeanManagerSetup,
       }
 
       @Override
-      public boolean isConcrete() {
-        return true;
-      }
-
-      @Override
       public boolean isActivated() {
         return true;
       }
@@ -446,6 +441,11 @@ public class AsyncBeanManagerImpl implements AsyncBeanManager, BeanManagerSetup,
       @Override
       public String toString() {
         return BeanManagerUtil.beanDeftoString(handle);
+      }
+
+      @Override
+      public boolean isAssignableTo(final Class<?> type) {
+        return handle.getAssignableTypes().contains(type);
       }
 
     }

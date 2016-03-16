@@ -19,6 +19,7 @@
 <module>
     <inherits name='com.google.gwt.user.User'/>
     <inherits name='com.google.common.collect.Collect'/>
+    <inherits name='org.jboss.errai.ui.DataBindingUIExtensions'/>
 
     <generate-with class="org.jboss.errai.databinding.rebind.BindableProxyLoaderGenerator">
         <when-type-assignable

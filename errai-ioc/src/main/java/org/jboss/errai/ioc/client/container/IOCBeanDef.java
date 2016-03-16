@@ -1,19 +1,19 @@
-/**
- * JBoss, Home of Professional Open Source
- * Copyright 2015, Red Hat, Inc. and/or its affiliates, and individual
- * contributors by the @authors tag. See the copyright.txt in the
- * distribution for a full listing of individual contributors.
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.ioc.client.container;
 
 import java.lang.annotation.Annotation;
@@ -26,6 +26,13 @@ import org.jboss.errai.ioc.client.api.ActivatedBy;
  * @author Max Barkley <mbarkley@redhat.com>
  */
 public interface IOCBeanDef<T> {
+
+  /**
+   * @param type
+   *          Must not be null.
+   * @return True if this bean is assginable to the given type.
+   */
+  public boolean isAssignableTo(Class<?> type);
 
   /**
    * Returns the type of the bean.
@@ -71,13 +78,6 @@ public interface IOCBeanDef<T> {
    * @return the name of the bean. If the bean does not have a name, returns null.
    */
   public String getName();
-
-  /**
-   * Returns true if the bean is a concrete bean definition and not an interface or abstract type.
-   *
-   * @return true if concrete.
-   */
-  public boolean isConcrete();
 
   /**
    * Returns true if the bean is activated. All managed beans are activated by default unless a

@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,11 @@
  */
 
 package org.jboss.errai.codegen.builder.impl;
+
+import java.lang.annotation.Annotation;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import org.jboss.errai.codegen.Context;
 import org.jboss.errai.codegen.DefModifiers;
@@ -32,24 +37,19 @@ import org.jboss.errai.codegen.literal.AnnotationLiteral;
 import org.jboss.errai.codegen.meta.MetaClass;
 import org.jboss.errai.codegen.meta.MetaClassFactory;
 
-import java.lang.annotation.Annotation;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * @author Mike Brock <cbrock@redhat.com>
  */
 public class FieldBuilder<T> implements FieldBuildStart<T>, FieldBuildType<T>,
         FieldBuildName<T>, FieldBuildInitializer<T> {
 
-  private BuildCallback<T> callback;
-  private Scope scope;
+  private final BuildCallback<T> callback;
+  private final Scope scope;
   private DefModifiers modifiers;
   private MetaClass type;
   private String name;
   private Statement initializer;
-  private List<Annotation> annotations = new ArrayList<Annotation>();
+  private final List<Annotation> annotations = new ArrayList<Annotation>();
 
   public FieldBuilder(BuildCallback<T> callback, Scope scope, MetaClass type, String name) {
     this.callback = callback;
@@ -109,9 +109,7 @@ public class FieldBuilder<T> implements FieldBuildStart<T>, FieldBuildType<T>,
 
           final StringBuilder sbuf = new StringBuilder();
 
-          for (Annotation a : annotations) {
-            sbuf.append(new AnnotationLiteral(a).getCanonicalString(context)).append(" ");
-          }
+          annotations.forEach(a -> sbuf.append(new AnnotationLiteral(a).getCanonicalString(context)).append(" "));
 
           sbuf.append(scope.getCanonicalName())
                   .append(scope == Scope.Package ? "" : " ")

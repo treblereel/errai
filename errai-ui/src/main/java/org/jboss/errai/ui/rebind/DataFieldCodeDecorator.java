@@ -1,11 +1,11 @@
 /*
- * Copyright 2012 JBoss, by Red Hat, Inc
+ * Copyright (C) 2012 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,18 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.ui.rebind;
+
+import static org.jboss.errai.codegen.util.Stmt.loadLiteral;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import javax.inject.Inject;
 
 import org.jboss.errai.codegen.Statement;
 import org.jboss.errai.codegen.exception.GenerationException;
 import org.jboss.errai.codegen.meta.MetaClass;
 import org.jboss.errai.codegen.util.Stmt;
+import org.jboss.errai.common.client.api.IsElement;
 import org.jboss.errai.common.client.ui.ElementWrapperWidget;
+import org.jboss.errai.common.client.ui.HasValue;
 import org.jboss.errai.ioc.client.api.CodeDecorator;
 import org.jboss.errai.ioc.rebind.ioc.extension.IOCDecoratorExtension;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.Decorable;
@@ -57,23 +60,28 @@ public class DataFieldCodeDecorator extends IOCDecoratorExtension<DataField> {
   public void generateDecorator(final Decorable decorable, final FactoryController controller) {
     controller.ensureMemberExposed(decorable.get());
     Statement instance = decorable.getAccessStatement();
-    String name = getTemplateDataFieldName((DataField) decorable.getAnnotation(), decorable.getName());
-    if (decorable.getType().isAssignableTo(Element.class)) {
-      if (decorable.get().isAnnotationPresent(Inject.class)) {
-        throw new GenerationException("@DataField [" + name + "] in class ["
-            + decorable.getDecorableDeclaringType().getFullyQualifiedName() + "] is of type ["
-            + decorable.getType().getFullyQualifiedName()
-            + "] which does not support @Inject; this instance must be created manually.");
-      }
+    final String name = getTemplateDataFieldName((DataField) decorable.getAnnotation(), decorable.getName());
+    final boolean isWidget = decorable.getType().isAssignableTo(Widget.class);
+    if (!isWidget && decorable.getType().isAnnotationPresent(Templated.class)) {
+      instance = Stmt.invokeStatic(TemplateWidgetMapper.class, "get", instance);
+    } else if (decorable.getType().isAssignableTo(Element.class)) {
       instance = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget", instance);
+    } else if (decorable.getType().isAssignableTo(IsElement.class)) {
+      instance = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget", Stmt.nestedCall(instance).invoke("getElement"));
     } else if (RebindUtil.isNativeJsType(decorable.getType()) || RebindUtil.isElementalIface(decorable.getType())) {
-      instance = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget", Stmt.invokeStatic(TemplateUtil.class, "asElement", instance));
-    } else if (!decorable.getType().isAssignableTo(Widget.class)) {
-      if (decorable.getType().isAnnotationPresent(Templated.class)) {
-        instance = Stmt.invokeStatic(TemplateWidgetMapper.class, "get", instance);
-      } else {
+      if (decorable.getType().isAssignableTo(HasValue.class)) {
+        final MetaClass valueType = decorable.getType().getMethod("getValue", new Class[0]).getReturnType();
+        instance = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget",
+                Stmt.invokeStatic(TemplateUtil.class, "asElement", instance), loadLiteral(valueType));
+      }
+      else {
+        instance = Stmt.invokeStatic(ElementWrapperWidget.class, "getWidget", Stmt.invokeStatic(TemplateUtil.class, "asElement", instance));
+      }
+    }
+    else {
+      if (!isWidget) {
         throw new GenerationException("Unable to use [" + name + "] in class [" + decorable.getDecorableDeclaringType()
-        + "] as a @DataField. The field must be a Widget or a DOM element as either a JavaScriptObject or native @JsType.");
+                + "] as a @DataField. The field must be a Widget or a DOM element as either a JavaScriptObject, native @JsType, or IsElement.");
       }
     }
 

@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,6 +31,7 @@ import org.jboss.errai.ioc.client.container.IOCEnvironment;
 import org.jboss.errai.ioc.client.container.IOCResolutionException;
 
 import com.google.gwt.core.client.GWT;
+import org.jboss.errai.ioc.client.container.SyncBeanDef;
 
 @SuppressWarnings("rawtypes")
 @IOCProvider
@@ -90,7 +91,11 @@ public class InstanceProvider implements ContextualTypeProvider<Instance> {
 
     @Override
     public Iterator<Object> iterator() {
-      return Collections.emptyList().iterator();
+      Collection<SyncBeanDef> beanDefs = IOC.getBeanManager().lookupBeans( type, qualifiers );
+      if(beanDefs==null){
+        return Collections.emptyList().iterator();
+      }
+      return new InstanceImplIterator(beanDefs);
     }
 
     @Override
@@ -122,6 +127,30 @@ public class InstanceProvider implements ContextualTypeProvider<Instance> {
     @Override
     public void destroy(final Object instance) {
       IOC.getBeanManager().destroyBean(instance);
+    }
+
+    private class InstanceImplIterator implements Iterator {
+
+      private final Iterator<SyncBeanDef> delegate;
+
+      public InstanceImplIterator( Collection<SyncBeanDef> beanDefs ) {
+        this.delegate = beanDefs.iterator();
+      }
+
+      @Override
+      public boolean hasNext() {
+        return delegate.hasNext();
+      }
+
+      @Override
+      public Object next() {
+        return delegate.next().getInstance();
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException();
+      }
     }
   }
 }

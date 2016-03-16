@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -32,7 +32,7 @@ import org.jboss.errai.codegen.builder.VariableDeclarationInitializer;
  * @author Christian Sadilek <csadilek@redhat.com>
  */
 public class ContextBuilder implements Builder {
-  private Context context;
+  private final Context context;
 
   protected ContextBuilder(Context context) {
     this.context = context;
@@ -111,20 +111,16 @@ public class ContextBuilder implements Builder {
     return declareVariable(Variable.create(name, type));
   }
 
-
   @Override
   public String toJavaString() {
-    Collection<Variable> vars = context.getDeclaredVariables();
-    StringBuilder buf = new StringBuilder(128);
-
-    for (Variable var : vars) {
-      buf.append(var.generate(context)).append(";\n");
-    }
-
+    final Collection<Variable> vars = context.getDeclaredVariables();
+    final StringBuilder buf = new StringBuilder(128);
+    vars.forEach(var -> buf.append(var.generate(context)).append(";\n"));
     return buf.toString();
   }
 
   public Context getContext() {
     return context;
   }
+  
 }

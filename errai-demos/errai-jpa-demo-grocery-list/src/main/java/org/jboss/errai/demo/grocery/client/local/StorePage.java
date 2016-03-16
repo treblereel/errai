@@ -1,19 +1,19 @@
-/**
- * JBoss, Home of Professional Open Source
- * Copyright 2013, Red Hat, Inc. and/or its affiliates, and individual
- * contributors by the @authors tag. See the copyright.txt in the
- * distribution for a full listing of individual contributors.
+/*
+ * Copyright (C) 2013 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.demo.grocery.client.local;
 
 import javax.enterprise.context.Dependent;
@@ -44,9 +44,9 @@ import org.gwtopenmaps.openlayers.client.layer.OSM;
 import org.gwtopenmaps.openlayers.client.layer.Vector;
 import org.gwtopenmaps.openlayers.client.util.JSObject;
 import org.jboss.errai.databinding.client.api.DataBinder;
-import org.jboss.errai.databinding.client.api.InitialState;
-import org.jboss.errai.databinding.client.api.PropertyChangeEvent;
-import org.jboss.errai.databinding.client.api.PropertyChangeHandler;
+import org.jboss.errai.databinding.client.api.StateSync;
+import org.jboss.errai.databinding.client.api.handler.property.PropertyChangeEvent;
+import org.jboss.errai.databinding.client.api.handler.property.PropertyChangeHandler;
 import org.jboss.errai.demo.grocery.client.local.map.GoogleMapBootstrapper;
 import org.jboss.errai.demo.grocery.client.local.map.LocationProvider;
 import org.jboss.errai.demo.grocery.client.local.map.LocationProvider.LocationCallback;
@@ -155,7 +155,7 @@ public class StorePage extends Composite {
         Window.alert("No such store: " + requestedStoreId);
         backToStoresPage.go();
       }
-      storeBinder.setModel(found, InitialState.FROM_MODEL);
+      storeBinder.setModel(found, StateSync.FROM_MODEL);
       radius.setValue(Integer.valueOf(DEFAULT_RADIUS));
     }
 

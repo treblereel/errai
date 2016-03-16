@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,8 @@ import java.util.List;
 import org.jboss.errai.databinding.client.api.Bindable;
 
 /**
- * Represent the type of a bound property.
+ * Represents the type of a JavaBean property with additional metadata for Errai
+ * data binding.
  * 
  * @author Christian Sadilek <csadilek@redhat.com>
  */
@@ -32,6 +33,10 @@ public class PropertyType {
   private final boolean bindable;
   private final boolean list;
 
+  public PropertyType(Class type) {
+    this (type, false, false);
+  }
+  
   public PropertyType(Class type, boolean bindable, boolean list) {
     this.type = type;
     this.bindable = bindable;
@@ -55,7 +60,7 @@ public class PropertyType {
   public boolean isBindable() {
     return bindable;
   }
-  
+
   /**
    * Indicates whether or not the property type is a {@link List}.
    * 

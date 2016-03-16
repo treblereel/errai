@@ -1,6 +1,22 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.processor;
 
-import static org.jboss.errai.processor.AnnotationProcessors.*;
+import static org.jboss.errai.processor.AnnotationProcessors.getAnnotationParamValueWithoutDefaults;
 
 import java.io.IOException;
 import java.util.Set;
@@ -14,9 +30,7 @@ import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
-import javax.lang.model.util.Types;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
@@ -31,23 +45,17 @@ public class TemplatedAnnotationChecker extends AbstractProcessor {
 
   @Override
   public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-    final Types types = processingEnv.getTypeUtils();
     final Elements elements = processingEnv.getElementUtils();
-    final TypeMirror gwtCompositeType = elements.getTypeElement(TypeNames.GWT_COMPOSITE).asType();
-    
+
     for (TypeElement annotation : annotations) {
       for (Element target : roundEnv.getElementsAnnotatedWith(annotation)) {
-        if (!types.isAssignable(target.asType(), gwtCompositeType)) {
-          processingEnv.getMessager().printMessage(
-                  Kind.ERROR, "@Templated classes must be a direct or indirect subtype of Composite", target);
-        }
-        
+
         PackageElement packageElement = elements.getPackageOf(target);
         String templateRef = getReferencedTemplate(target);
         String templateRefError = null;
         try {
           FileObject resource = processingEnv.getFiler().getResource(StandardLocation.CLASS_PATH, packageElement.getQualifiedName(), templateRef);
-          CharSequence charContent = resource.getCharContent(true);
+          resource.getCharContent(true);
         } catch (IllegalArgumentException e) {
           // unfortunately, Eclipse just throws IAE when we try to read files from CLASS_PATH
           // so the best we can do is ignore this error and skip validating the template reference
@@ -65,7 +73,7 @@ public class TemplatedAnnotationChecker extends AbstractProcessor {
   /**
    * Resolves the filename that the given class's {@code @Templated} annotation
    * points to, taking all default behaviour into account.
-   * 
+   *
    * @param target
    *          a class that bears the {@code Templated} annotation.
    */
@@ -93,5 +101,5 @@ public class TemplatedAnnotationChecker extends AbstractProcessor {
     }
     return templateRef;
   }
-  
+
 }

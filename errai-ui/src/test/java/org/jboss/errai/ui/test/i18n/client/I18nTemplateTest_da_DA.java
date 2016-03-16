@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.ui.test.i18n.client;
 
 import org.jboss.errai.enterprise.client.cdi.AbstractErraiCDITest;
@@ -29,7 +45,7 @@ public class I18nTemplateTest_da_DA extends AbstractErraiCDITest {
    */
   @Test
   public void testBundleAccess() {
-    I18nTemplateTestApp app = IOC.getBeanManager().lookupBean(org.jboss.errai.ui.test.i18n.client.I18nTemplateTestApp.class).getInstance();
+    I18nTemplateTestApp app = IOC.getBeanManager().lookupBean(org.jboss.errai.ui.test.i18n.client.CompositeI18nTemplateTestApp.class).getInstance();
     assertNotNull(app.getComponent());
     assertEquals("Velkommen til errai-ui i18n demo.", app.getComponent().getWelcome_p().getInnerText());
     assertEquals("label 1:", app.getComponent().getLabel1().getText());

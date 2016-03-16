@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, a divison Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,13 +16,16 @@
 
 package org.jboss.errai.ioc.tests.wiring.client;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.jboss.errai.ioc.client.IOCClientTestCase;
+import org.jboss.errai.ioc.client.QualifierUtil;
 import org.jboss.errai.ioc.client.container.ClientBeanManager;
 import org.jboss.errai.ioc.client.container.Factory;
 import org.jboss.errai.ioc.client.container.IOC;
 import org.jboss.errai.ioc.client.container.IOCEnvironment;
+import org.jboss.errai.ioc.client.container.IOCResolutionException;
 import org.jboss.errai.ioc.client.container.SyncBeanDef;
 import org.jboss.errai.ioc.rebind.ioc.test.harness.IOCSimulatedTestRunner;
 import org.jboss.errai.ioc.tests.wiring.client.res.ActivatedBean;
@@ -35,10 +38,12 @@ import org.jboss.errai.ioc.tests.wiring.client.res.DependentWithPackageConstr;
 import org.jboss.errai.ioc.tests.wiring.client.res.DependentWithPrivateConstr;
 import org.jboss.errai.ioc.tests.wiring.client.res.DependentWithProtectedConstr;
 import org.jboss.errai.ioc.tests.wiring.client.res.HappyInspector;
+import org.jboss.errai.ioc.tests.wiring.client.res.IfaceProducer;
 import org.jboss.errai.ioc.tests.wiring.client.res.ProxiableInjectableConstr;
 import org.jboss.errai.ioc.tests.wiring.client.res.ProxiableInjectableConstrThrowsNPE;
 import org.jboss.errai.ioc.tests.wiring.client.res.ProxiableNonPublicPostconstruct;
 import org.jboss.errai.ioc.tests.wiring.client.res.ProxiableProtectedConstr;
+import org.jboss.errai.ioc.tests.wiring.client.res.PublicInnerClassIface;
 import org.jboss.errai.ioc.tests.wiring.client.res.QualInspector;
 import org.jboss.errai.ioc.tests.wiring.client.res.SetterInjectionBean;
 import org.jboss.errai.ioc.tests.wiring.client.res.SimpleBean;
@@ -280,6 +285,19 @@ public class BasicIOCTest extends IOCClientTestCase {
       IOC.getBeanManager().lookupBean(DependentWithProtectedConstr.class).getInstance();
     } catch (Throwable t) {
       throw new AssertionError("Could not create instance of bean with protected constructor.", t);
+    }
+  }
+
+  public void testNoFactoryGeneratedForInnerClassOfNonPublicClass() throws Exception {
+    final Collection<SyncBeanDef<PublicInnerClassIface>> foundBeans = IOC.getBeanManager().lookupBeans(PublicInnerClassIface.class, QualifierUtil.ANY_ANNOTATION);
+    assertEquals(0, foundBeans.size());
+  }
+
+  public void testInterfaceStaticProducer() throws Exception {
+    try {
+      IOC.getBeanManager().lookupBean(IfaceProducer.class).getInstance();
+    } catch (IOCResolutionException ex) {
+      throw new AssertionError("Could not produce " + IfaceProducer.class.getSimpleName(), ex);
     }
   }
 }

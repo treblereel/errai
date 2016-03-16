@@ -1,11 +1,11 @@
 /*
- * Copyright 2013 JBoss, by Red Hat, Inc
+ * Copyright (C) 2013 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,12 +19,14 @@ package org.jboss.errai.databinding.client;
 import java.util.Collection;
 import java.util.List;
 
+import org.jboss.errai.databinding.client.api.handler.list.BindableListChangeHandler;
+
 /**
  * A {@link BindableListChangeHandler} that can be used in case details of the underlying list
  * mutation are irrelevant (when the sole information that the list has changed is sufficient).
- * 
+ *
  * @author Christian Sadilek <csadilek@redhat.com>
- * 
+ *
  * @param <M>
  */
 public abstract class UnspecificListChangeHandler<M> implements BindableListChangeHandler<M> {
@@ -71,7 +73,7 @@ public abstract class UnspecificListChangeHandler<M> implements BindableListChan
 
   /**
    * Called when the monitored list has been mutated.
-   * 
+   *
    * @param source
    *          a list representing the state before the change. Never null.
    */

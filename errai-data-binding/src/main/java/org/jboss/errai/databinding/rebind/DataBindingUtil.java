@@ -1,11 +1,11 @@
 /*
- * Copyright 2013 JBoss, by Red Hat, Inc
+ * Copyright (C) 2013 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -301,9 +301,7 @@ public class DataBindingUtil {
         }
         final ParamDependency paramDep = (ParamDependency) dep;
         if (paramDep.getParameter().isAnnotationPresent(AutoBound.class)) {
-          final Statement creationAccessStatement = DecorableType.PARAM.getAccessStatement(paramDep.getParameter(), decorable.getFactoryMetaClass());
-          controller.addInitializationStatements(Collections.<Statement>singletonList(controller.setReferenceStmt(BINDER_VAR_NAME, creationAccessStatement)));
-          return controller.getReferenceStmt(BINDER_VAR_NAME, DataBinder.class);
+          return DecorableType.PARAM.getAccessStatement(paramDep.getParameter(), decorable.getFactoryMetaClass());
         } else {
           break;
         }

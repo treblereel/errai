@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 
 package org.jboss.errai.enterprise.rebind;
 
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 
 import javax.ws.rs.Path;
@@ -51,7 +52,7 @@ import com.google.gwt.core.ext.UnableToCompleteException;
 
 /**
  * Generates the JAX-RS proxy loader.
- * 
+ *
  * @author Christian Sadilek <csadilek@redhat.com>
  */
 @GenerateAsync(JaxrsProxyLoader.class)
@@ -77,7 +78,7 @@ public class JaxrsProxyLoaderGenerator extends AbstractAsyncGenerator {
     Collection<MetaClass> remotes = ClassScanner.getTypesAnnotatedWith(Path.class,
         RebindUtils.findTranslatablePackages(context), context);
     addCacheRelevantClasses(remotes);
-    
+
     for (MetaClass remote : remotes) {
       if (remote.isInterface()) {
         // create the remote proxy for this interface
@@ -133,7 +134,7 @@ public class JaxrsProxyLoaderGenerator extends AbstractAsyncGenerator {
     for (MetaClass metaClass : providers) {
       if (!metaClass.isAbstract() && metaClass.isAssignableTo(ClientExceptionMapper.class)) {
         MapsFrom mapsFrom = metaClass.getAnnotation(MapsFrom.class);
-        if (mapsFrom == null) { 
+        if (mapsFrom == null) {
           if (genericExceptionMapperClass == null) {
             // Found a generic client-side exception mapper (to be used for all REST interfaces)
             genericExceptionMapperClass = metaClass;
@@ -158,10 +159,16 @@ public class JaxrsProxyLoaderGenerator extends AbstractAsyncGenerator {
 
     return result;
   }
-  
+
   @Override
-  protected boolean isRelevantNewClass(MetaClass clazz) {
-    return clazz.isAnnotationPresent(Path.class) || clazz.isAnnotationPresent(FeatureInterceptor.class)
-            || clazz.isAnnotationPresent(InterceptsRemoteCall.class) || clazz.isAnnotationPresent(Provider.class); 
+  protected boolean isRelevantClass(MetaClass clazz) {
+    for (final Annotation anno : clazz.getAnnotations()) {
+      if (anno.annotationType().equals(Path.class) || anno.annotationType().equals(FeatureInterceptor.class)
+              || anno.annotationType().equals(InterceptsRemoteCall.class) || anno.annotationType().equals(Provider.class)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 }

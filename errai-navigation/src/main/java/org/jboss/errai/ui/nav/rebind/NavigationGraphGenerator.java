@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.ui.nav.rebind;
 
 import java.io.File;
@@ -41,6 +57,7 @@ import org.jboss.errai.codegen.util.PrivateAccessUtil;
 import org.jboss.errai.codegen.util.Refs;
 import org.jboss.errai.codegen.util.Stmt;
 import org.jboss.errai.common.client.PageRequest;
+import org.jboss.errai.common.client.api.IsElement;
 import org.jboss.errai.common.client.util.CreationalCallback;
 import org.jboss.errai.common.metadata.RebindUtils;
 import org.jboss.errai.config.rebind.AbstractAsyncGenerator;
@@ -69,6 +86,7 @@ import org.jboss.errai.ui.nav.client.local.api.NavigationControl;
 import org.jboss.errai.ui.nav.client.local.spi.NavigationGraph;
 import org.jboss.errai.ui.nav.client.local.spi.PageNode;
 import org.jboss.errai.ui.nav.client.shared.NavigationEvent;
+import org.jboss.errai.ui.shared.api.annotations.Templated;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BiMap;
@@ -126,9 +144,10 @@ public class NavigationGraphGenerator extends AbstractAsyncGenerator {
 
     if (hasNonBlacklistedPages) {
       for (MetaClass pageClass : pages) {
-        if (!pageClass.isAssignableTo(IsWidget.class)) {
-          throw new GenerationException(
-              "Class " + pageClass.getFullyQualifiedName() + " is annotated with @Page, so it must implement IsWidget");
+        if (!(pageClass.isAssignableTo(IsWidget.class) || pageClass.isAssignableTo(IsElement.class)
+                || pageClass.isAnnotationPresent(Templated.class))) {
+          throw new GenerationException("Class " + pageClass.getFullyQualifiedName()
+                  + " is annotated with @Page, so it must implement IsWidget or be @Templated");
         }
         Page annotation = pageClass.getAnnotation(Page.class);
         String pageName = getPageName(pageClass);
@@ -311,14 +330,11 @@ public class NavigationGraphGenerator extends AbstractAsyncGenerator {
   private String getPageURL(MetaClass pageClass, String pageName) {
     Page pageAnnotation = pageClass.getAnnotation(Page.class);
     String path = pageAnnotation.path();
-    
+
     if (path.equals("")) {
       return pageName;
     }
-    
-    if (path.startsWith("/"))
-      path = path.substring(1);
-    
+
     return path;
   }
 
@@ -718,7 +734,7 @@ public class NavigationGraphGenerator extends AbstractAsyncGenerator {
   }
 
   @Override
-  protected boolean isRelevantNewClass(MetaClass clazz) {
+  protected boolean isRelevantClass(MetaClass clazz) {
     return clazz.isAnnotationPresent(Page.class);
   }
 }

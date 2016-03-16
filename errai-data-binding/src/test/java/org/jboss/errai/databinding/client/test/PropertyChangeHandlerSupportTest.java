@@ -1,11 +1,11 @@
 /*
- * Copyright 2012 JBoss, a division of Red Hat.
+ * Copyright (C) 2012 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.databinding.client.test;
 
 import static org.junit.Assert.assertEquals;
 
 import org.jboss.errai.databinding.client.MockHandler;
 import org.jboss.errai.databinding.client.PropertyChangeHandlerSupport;
-import org.jboss.errai.databinding.client.api.PropertyChangeEvent;
+import org.jboss.errai.databinding.client.api.handler.property.PropertyChangeEvent;
 import org.junit.Before;
 import org.junit.Test;
 

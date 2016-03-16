@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,11 @@ package org.jboss.errai.codegen.meta.impl.gwt;
 
 import java.lang.annotation.Annotation;
 
-import org.jboss.errai.codegen.meta.*;
+import org.jboss.errai.codegen.meta.MetaClass;
+import org.jboss.errai.codegen.meta.MetaClassMember;
+import org.jboss.errai.codegen.meta.MetaConstructor;
+import org.jboss.errai.codegen.meta.MetaMethod;
+import org.jboss.errai.codegen.meta.MetaParameter;
 
 import com.google.gwt.core.ext.typeinfo.JParameter;
 import com.google.gwt.core.ext.typeinfo.TypeOracle;
@@ -60,15 +64,6 @@ public class GWTParameter extends MetaParameter {
   @Override
   public Annotation[] getAnnotations() {
     return annotations;
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
-  public final <A extends Annotation> A getAnnotation(final Class<A> annotation) {
-    for (final Annotation a : getAnnotations()) {
-      if (a.annotationType().equals(annotation)) return (A) a;
-    }
-    return null;
   }
 
   @Override

@@ -1,11 +1,11 @@
 /*
- * Copyright 2009 JBoss, a divison Red Hat, Inc
+ * Copyright (C) 2009 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.jboss.errai.cdi.server;
 
 import static java.util.ResourceBundle.getBundle;
@@ -77,7 +78,9 @@ import org.jboss.errai.common.server.api.ErraiBootstrapFailure;
 import org.jboss.errai.config.rebind.EnvUtil;
 import org.jboss.errai.config.util.ClassScanner;
 import org.jboss.errai.enterprise.client.cdi.CDIProtocol;
+import org.jboss.errai.enterprise.client.cdi.EventQualifierSerializer;
 import org.jboss.errai.enterprise.client.cdi.api.CDI;
+import org.jboss.errai.enterprise.rebind.NonGwtEventQualifierSerializerGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +94,7 @@ import org.slf4j.LoggerFactory;
  * @author Max Barkley <mbarkley@redhat.com>
  */
 public class CDIExtensionPoints implements Extension {
-  private static final Logger log = LoggerFactory.getLogger(CDIExtensionPoints.class);
+  public static final Logger log = LoggerFactory.getLogger(CDIExtensionPoints.class);
 
   private final TypeRegistry managedTypes = new TypeRegistry();
 
@@ -112,6 +115,10 @@ public class CDIExtensionPoints implements Extension {
     veto.add(ErraiService.class.getName());
 
     vetoClasses = Collections.unmodifiableSet(veto);
+
+    if (!EventQualifierSerializer.isSet()) {
+      NonGwtEventQualifierSerializerGenerator.loadAndSetEventQualifierSerializer();
+    }
   }
 
   public void beforeBeanDiscovery(@Observes final BeforeBeanDiscovery bbd) {
@@ -154,29 +161,50 @@ public class CDIExtensionPoints implements Extension {
    * @param <T>
    *          -
    */
-  @SuppressWarnings("rawtypes")
   public <T> void observeResources(@Observes final ProcessAnnotatedType<T> event) {
     final AnnotatedType<T> type = event.getAnnotatedType();
 
+    registerBeanQualifiers(type);
+    maybeRegisterServices(type);
+    maybeVetoClientClass(event, type);
+  }
+
+  private <T> void registerBeanQualifiers(final AnnotatedType<T> type) {
     for (final Annotation a : type.getJavaClass().getAnnotations()) {
       if (a.annotationType().isAnnotationPresent(Qualifier.class)) {
         beanQualifiers.put(a.annotationType().getName(), a);
       }
     }
+  }
 
-    // services
-    if (type.isAnnotationPresent(Service.class)) {
+  private <T> void maybeVetoClientClass(final ProcessAnnotatedType<T> event, final AnnotatedType<T> type) {
+    // veto on client side implementations that contain CDI annotations
+    // (i.e. @Observes) Otherwise Weld might try to invoke on them
+    Class<?> javaClass = type.getJavaClass();
+    Package pkg = javaClass.getPackage();
+    if (vetoClasses.contains(javaClass.getName())
+            || (pkg != null && pkg.getName().matches("(^|.*\\.)client(?!\\.shared)(\\..*)?")
+            && !javaClass.isInterface())) {
+      log.debug("Vetoing processed type: " + javaClass.getName());
+      event.veto();
+    }
+  }
+
+  private <T> void maybeRegisterServices(final AnnotatedType<T> type) {
+    if (type.isAnnotationPresent(Remote.class)) {
+      log.info("discovered errai remote interface: " + type);
+      managedTypes.addRemoteInterface(type.getJavaClass());
+    }
+    else if (type.isAnnotationPresent(Service.class)) {
       log.info("discovered errai service: " + type);
       boolean isRpc = false;
 
       final Class<T> javaClass = type.getJavaClass();
       for (final Class<?> intf : javaClass.getInterfaces()) {
-        isRpc = intf.isAnnotationPresent(Remote.class);
+        isRpc = isRpc || intf.isAnnotationPresent(Remote.class);
 
         if (isRpc) {
-          if (!managedTypes.getRemoteInterfaces().contains(intf)) {
-            managedTypes.addRemoteInterface(intf);
-          }
+          managedTypes.addRemoteServiceImplementation(intf, javaClass);
         }
       }
 
@@ -188,7 +216,7 @@ public class CDIExtensionPoints implements Extension {
         }
       }
     }
-    for (final AnnotatedMethod method : type.getMethods()) {
+    for (@SuppressWarnings("rawtypes") final AnnotatedMethod method : type.getMethods()) {
       if (method.isAnnotationPresent(Service.class)) {
         try {
           managedTypes.addService(new ServiceMethodParser(method.getJavaMember()));
@@ -196,17 +224,6 @@ public class CDIExtensionPoints implements Extension {
           e.printStackTrace();
         }
       }
-    }
-
-    // veto on client side implementations that contain CDI annotations
-    // (i.e. @Observes) Otherwise Weld might try to invoke on them
-    Class<?> javaClass = type.getJavaClass();
-    Package pkg = javaClass.getPackage();
-    if (vetoClasses.contains(javaClass.getName())
-            || (pkg != null && pkg.getName().matches("(^|.*\\.)client(?!\\.shared)(\\..*)?")
-            && !javaClass.isInterface())) {
-      log.debug("Vetoing processed type: " + javaClass.getName());
-      event.veto();
     }
   }
 
@@ -225,7 +242,7 @@ public class CDIExtensionPoints implements Extension {
       final Set<Annotation> annotations = processObserverMethod.getObserverMethod().getObservedQualifiers();
       final Annotation[] methodQualifiers = annotations.toArray(new Annotation[annotations.size()]);
       for (final Annotation qualifier : methodQualifiers) {
-        eventQualifiers.put(qualifier.annotationType().getName(), qualifier);
+        eventQualifiers.put(EventQualifierSerializer.get().serialize(qualifier), qualifier);
       }
 
       observableEvents.add(type.getName());
@@ -370,6 +387,9 @@ public class CDIExtensionPoints implements Extension {
             TimeUnit.MILLISECONDS);
 
     for (final Class<?> remoteInterfaceType : managedTypes.getRemoteInterfaces()) {
+      if (!managedTypes.isRemoteInterfaceImplemented(remoteInterfaceType)) {
+        log.warn("No @Service implementations found for " + remoteInterfaceType.getName());
+      }
       createRPCScaffolding(remoteInterfaceType, bus, beanManager);
     }
   }

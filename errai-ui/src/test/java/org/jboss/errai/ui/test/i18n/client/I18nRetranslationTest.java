@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.ui.test.i18n.client;
 
 import org.jboss.errai.enterprise.client.cdi.AbstractErraiCDITest;
@@ -19,7 +35,7 @@ import com.google.gwt.user.client.ui.RootPanel;
  * Test that templated beans of different scopes are re-translated when the locale is manually
  * changed (ERRAI-610). Templated widgets attached to the DOM and detached application scoped Templated widgets
  * should be translated.
- * 
+ *
  * @author Max Barkley <mbarkley@redhat.com>
  */
 public class I18nRetranslationTest extends AbstractErraiCDITest {
@@ -137,7 +153,15 @@ public class I18nRetranslationTest extends AbstractErraiCDITest {
 
     AppScopedWidget appWidget = IOC.getBeanManager().lookupBean(AppScopedWidget.class).getInstance();
 
-    assertTrue("This widget should not be attached to the DOM!", !appWidget.isAttached());
+    /*
+     * Have to do both these because there is no method that both physically
+     * detaches and makes isAttached == false.
+     */
+    appWidget.removeFromParent();
+    appWidget.getElement().removeFromParent();
+
+    assertFalse("This widget should not be attached", appWidget.isAttached());
+    assertFalse("This widget's element should not be attached to the DOM!", appWidget.getElement().hasParentElement());
 
     TranslationService.setCurrentLocale("fr_fr");
 
@@ -162,7 +186,6 @@ public class I18nRetranslationTest extends AbstractErraiCDITest {
     // Check values through DOM
     Element element = parent.getElement();
     Element firstChild = element.getFirstChildElement();
-    String foo = firstChild.getInnerText();
     assertEquals("Parent template leaf element was not properly translated", "bonjour", firstChild.getInnerText());
     assertEquals("Non-keyed child template was not translated", "bonjour", firstChild.getNextSiblingElement().getInnerText());
     assertEquals("Keyed child template was not translated", "bonjour", firstChild

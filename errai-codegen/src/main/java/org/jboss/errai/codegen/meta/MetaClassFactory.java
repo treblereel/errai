@@ -1,11 +1,11 @@
 /*
- * Copyright 2011 JBoss, by Red Hat, Inc
+ * Copyright (C) 2011 Red Hat, Inc. and/or its affiliates.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -111,9 +111,9 @@ public final class MetaClassFactory {
   }
 
   private static MetaClassCache cache;
-  
+
   public static MetaClassCache getMetaClassCache() {
-    if (cache == null) { 
+    if (cache == null) {
       cache = CacheUtil.getCache(MetaClassCache.class);
     }
     return cache;
@@ -277,7 +277,7 @@ public final class MetaClassFactory {
   private static BuildMetaClass cloneToBuildMetaClass(final MetaClass clazz,
                                                       final MetaParameterizedType parameterizedType,
                                                       final boolean reifyRecursively) {
-    final BuildMetaClass buildMetaClass = new BuildMetaClass(Context.create(), clazz.getFullyQualifiedName());
+    final BuildMetaClass buildMetaClass = new BuildMetaClass(null, clazz.getFullyQualifiedName());
 
     buildMetaClass.setReifiedFormOf(clazz);
     buildMetaClass.setAbstract(clazz.isAbstract());
@@ -549,15 +549,15 @@ public final class MetaClassFactory {
   public static Collection<MetaClass> getAllNewOrUpdatedClasses() {
     return getMetaClassCache().getAllNewOrUpdated();
   }
-  
+
   public static Collection<MetaClass> getNewClasses() {
     return getMetaClassCache().getAllNewClasses();
   }
-  
+
   public static boolean isChangedOrDeleted(String fqcn) {
     return getMetaClassCache().getAllDeletedClasses().contains(fqcn) || getMetaClassCache().isNewOrUpdated(fqcn);
   }
-  
+
   public static Set<String> getAllDeletedClasses() {
     return getMetaClassCache().getAllDeletedClasses();
   }

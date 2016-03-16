@@ -1,8 +1,25 @@
+/*
+ * Copyright (C) 2015 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.jboss.errai.processor;
 
 import static org.jboss.errai.processor.AnnotationProcessors.getAnnotation;
 import static org.jboss.errai.processor.AnnotationProcessors.getEnclosingTypeElement;
 import static org.jboss.errai.processor.AnnotationProcessors.hasAnnotation;
+import static org.jboss.errai.processor.AnnotationProcessors.isNativeJsType;
 import static org.jboss.errai.processor.AnnotationProcessors.propertyNameOfMethod;
 
 import java.util.ArrayList;
@@ -54,9 +71,9 @@ public class BoundAnnotationChecker extends AbstractProcessor {
         else {
           targetType = target.asType();
         }
-        if (!types.isAssignable(targetType, gwtWidgetType) && !types.isAssignable(targetType, gwtElementType)) {
+        if (!types.isAssignable(targetType, gwtWidgetType) && !types.isAssignable(targetType, gwtElementType) && !isNativeJsType(targetType, elements)) {
           processingEnv.getMessager().printMessage(
-                  Kind.ERROR, "@Bound must target a type assignable to Widget or Element", target);
+                  Kind.ERROR, "@Bound must target a type assignable to Widget or Element, or be a JsType element wrapper.", target);
         }
 
         TypeElement enclosingClass = getEnclosingTypeElement(target);
@@ -65,7 +82,7 @@ public class BoundAnnotationChecker extends AbstractProcessor {
           boundThings = new ArrayList<Element>();
           classesWithBoundThings.put(enclosingClass, boundThings);
         }
-        
+
         boundThings.add(target);
       }
     }
@@ -87,10 +104,10 @@ public class BoundAnnotationChecker extends AbstractProcessor {
         for (Element boundElement : classWithItsBoundThings.getValue()) {
           String configuredProperty = AnnotationProcessors.
                   extractAnnotationStringValue(elements, getAnnotation(boundElement, TypeNames.BOUND), "property");
-          
-          final String boundProperty = (configuredProperty != null && !configuredProperty.isEmpty()) ? 
+
+          final String boundProperty = (configuredProperty != null && !configuredProperty.isEmpty()) ?
                   configuredProperty : boundElement.getSimpleName().toString();
-          
+
           switch (boundElement.getKind()) {
           case FIELD:
           case PARAMETER:
@@ -144,7 +161,7 @@ public class BoundAnnotationChecker extends AbstractProcessor {
     }
     return result;
   }
-  
+
   /**
    * Returns the type of the provided property in the given model type.
    */
@@ -155,7 +172,7 @@ public class BoundAnnotationChecker extends AbstractProcessor {
     TypeMirror result = null;
     for (Element el : ElementFilter.methodsIn(elements.getAllMembers((TypeElement) types.asElement(modelType)))) {
       String methodName = el.getSimpleName().toString();
-      if (methodName.toLowerCase().equals("get" + property.toLowerCase()) || 
+      if (methodName.toLowerCase().equals("get" + property.toLowerCase()) ||
               methodName.toLowerCase().equals("is" + property.toLowerCase())) {
         result = ((ExecutableElement) el).getReturnType();
         break;
@@ -217,11 +234,11 @@ public class BoundAnnotationChecker extends AbstractProcessor {
     // in a superclass, this could return a type variable or a wildcard
     return ((DeclaredType) dataBinderDeclaration).getTypeArguments().get(0);
   }
-  
+
   /**
    * Returns true if and only if the given property chain is a valid property
    * expression rooted in the given bindable type.
-   * 
+   *
    * @param bindableType
    *          The root type the given property chain is resolved against. Not
    *          null.
@@ -241,7 +258,7 @@ public class BoundAnnotationChecker extends AbstractProcessor {
       if (!getPropertyNames(bindableType).contains(thisProperty)) {
         return false;
       }
-      
+
       TypeMirror propertyType = getPropertyType(bindableType, thisProperty);
       return isValidPropertyChain(propertyType, moreProperties);
     }
