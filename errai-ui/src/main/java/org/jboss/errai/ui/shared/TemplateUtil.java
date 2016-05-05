@@ -193,6 +193,9 @@ public final class TemplateUtil {
       onAttachNative(component);
       RootPanel.detachOnWindowClose(component);
     }
+    if(component.getParent() == null && component.isAttached()){
+     component.removeFromParent();
+    }
     StyleBindingsRegistry.get().updateStyles(component);
     TemplateInitializedEvent.fire(component);
   }
