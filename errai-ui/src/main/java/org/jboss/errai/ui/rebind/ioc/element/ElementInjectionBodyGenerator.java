@@ -17,7 +17,6 @@
 package org.jboss.errai.ui.rebind.ioc.element;
 
 import com.google.common.base.Strings;
-import com.google.gwt.util.tools.shared.StringUtils;
 import elemental2.dom.DomGlobal;
 import elemental2.dom.Element;
 import jsinterop.base.Js;
@@ -36,14 +35,11 @@ import org.jboss.errai.ioc.rebind.ioc.bootstrapper.AbstractBodyGenerator;
 import org.jboss.errai.ioc.rebind.ioc.graph.api.DependencyGraph;
 import org.jboss.errai.ioc.rebind.ioc.graph.api.Injectable;
 import org.jboss.errai.ioc.rebind.ioc.injector.api.InjectionContext;
-import org.jboss.errai.ui.shared.TemplateUtil;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -60,20 +56,10 @@ import static org.jboss.errai.codegen.util.Stmt.loadVariable;
  */
 class ElementInjectionBodyGenerator extends AbstractBodyGenerator {
 
-  private final MetaClass type;
-  private final String tagName;
-  private final String classNames;
-  private final Set<Property> properties;
+  final ElementPropertyHolder holder;
 
-  ElementInjectionBodyGenerator(final MetaClass type, String tagName) {
-    this(type, tagName, Collections.emptySet(), "");
-  }
-
-  ElementInjectionBodyGenerator(final MetaClass type, String tagName, final Set<Property> properties, final String classNames) {
-    this.type = type;
-    this.tagName = tagName;
-    this.properties = properties;
-    this.classNames = classNames;
+  ElementInjectionBodyGenerator(ElementPropertyHolder holder) {
+    this.holder = holder;
   }
 
   @Override
@@ -85,21 +71,35 @@ class ElementInjectionBodyGenerator extends AbstractBodyGenerator {
 
     stmts.add(declareFinalVariable(elementVar, elementClass(), elementInitialization()));
 
-    for (final Property property : properties) {
-      stmts.add(loadVariable(elementVar).invoke("setPropertyString", loadLiteral(property.name()),
-              loadLiteral(property.value())));
+    if (holder.elementType.equals(ElementPropertyHolder.ElementType.ELEMENTAL)) {
+      for (final Property property : holder.properties) {
+        stmts.add(loadVariable(elementVar).invoke("setAttribute", loadLiteral(property.name()),
+            loadLiteral(property.value())));
+      }
+
+      if (!Strings.isNullOrEmpty(holder.classNames)) {
+        stmts.add(loadVariable(elementVar).loadField("className").assignValue(loadLiteral(holder.classNames)));
+      }
+
+    } else {
+
+      for (final Property property : holder.properties) {
+        stmts.add(loadVariable(elementVar).invoke("setPropertyString", loadLiteral(property.name()),
+          loadLiteral(property.value())));
+      }
+
+      if (!Strings.isNullOrEmpty(holder.classNames)) {
+        stmts.add(loadVariable(elementVar).invoke("addClassName", loadLiteral(holder.classNames)));
+      }
     }
 
-    if (!Strings.isNullOrEmpty(classNames)) {
-      stmts.add(loadVariable(elementVar).invoke("addClassName", loadLiteral(classNames)));
-    }
     final String retValVar = "retVal";
 
-    stmts.add(declareFinalVariable(retValVar, type, invokeStatic(Js.class, "cast", loadVariable(elementVar))));
+    stmts.add(declareFinalVariable(retValVar, holder.type, invokeStatic(Js.class, "cast", loadVariable(elementVar))));
 
-    if (implementsNativeHasValueAndRequiresGeneratedInvocation(type)) {
+    if (implementsNativeHasValueAndRequiresGeneratedInvocation(holder.type)) {
       stmts.add(Stmt.invokeStatic(NativeHasValueAccessors.class, "registerAccessor", loadVariable(retValVar),
-              createAccessorImpl(type, retValVar)));
+          createAccessorImpl(holder.type, retValVar)));
     }
 
     stmts.add(loadVariable(retValVar).returnValue());
@@ -107,7 +107,7 @@ class ElementInjectionBodyGenerator extends AbstractBodyGenerator {
   }
 
   protected ContextualStatementBuilder elementInitialization() {
-    return loadStatic(DomGlobal.class, "document").invoke("createElement", tagName);
+    return loadStatic(DomGlobal.class, "document").invoke("createElement", holder.tagName);
   }
 
   protected Class<?> elementClass() {

@@ -102,7 +102,7 @@ public class ElementProviderExtension implements IOCExtensionConfigurator {
     final Qualifier qualifier = injectionContext.getQualifierFactory().forSource(new HasNamedAnnotation(tagName));
     final InjectableHandle handle = new InjectableHandle(type, qualifier);
 
-    final AbstractBodyGenerator injectionBodyGenerator = new ElementInjectionBodyGenerator(type, tagName);
+    final AbstractBodyGenerator injectionBodyGenerator = new ElementInjectionBodyGenerator(new ElementPropertyHolder(type, tagName, getProperties(type), getClassNames(type), ElementPropertyHolder.ElementType.ELEMENTAL));
     final ElementProvider elementProvider = new ElementProvider(handle, injectionBodyGenerator);
 
     return new ExactTypeInjectableProvider(handle, elementProvider);
@@ -167,7 +167,7 @@ public class ElementProviderExtension implements IOCExtensionConfigurator {
     final InjectableHandle handle = new InjectableHandle(type, qualifier);
 
     final ElementProvider elementProvider = new ElementProvider(handle,
-            new ElementInjectionBodyGenerator(type, tagName, getProperties(type), getClassNames(type)) {
+            new ElementInjectionBodyGenerator(new ElementPropertyHolder(type, tagName, getProperties(type), getClassNames(type), ElementPropertyHolder.ElementType.JS)) {
 
               @Override
               protected ContextualStatementBuilder elementInitialization() {

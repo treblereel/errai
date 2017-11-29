@@ -113,4 +113,15 @@ public class ErraiUICDIIntegrationTest extends AbstractErraiCDITest {
     assertEquals("input does not have class value.", "my_class my_class1", bean.inputWithClassAnnotation.getClassName());
     assertEquals("input does not have class value.", "my_class", bean.inputWithClassAnnotationAndProperty.getClassName());
   }
+
+  public void testElemental2TypeElementQualifiedClassInjection() throws Exception {
+    final BeanWithElementInjectionSites bean = IOC.getBeanManager().lookupBean(BeanWithElementInjectionSites.class).getInstance();
+
+    assertNotNull("Input with class annotation was not injected.", bean.inputElemental2WithClassAndPropertiesAnnotations);
+
+    assertEquals("Input does not have class value.", "my_class my_class1", bean.inputElemental2WithClassAndPropertiesAnnotations.className);
+    assertEquals("Input does not have proper placeholder.", "1337", bean.inputElemental2WithClassAndPropertiesAnnotations.placeholder);
+    assertEquals("Input does not have proper id.", "id_1", bean.inputElemental2WithClassAndPropertiesAnnotations.id);
+
+  }
 }
