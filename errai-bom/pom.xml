@@ -41,7 +41,7 @@
     <guava.version>20.0</guava.version>
     <guice.version>3.0</guice.version>
     <gwt.phonegap.version>3.5.0.1</gwt.phonegap.version>
-    <gwt.version>2.8.2</gwt.version>
+    <gwt.version>2.9.0</gwt.version>
     <!-- TODO test with 2.x version in ip-bom -->
     <hsqldb.version>1.8.0.7</hsqldb.version>
     <javaee.api.version>7.0</javaee.api.version>
@@ -65,9 +65,11 @@
     <!-- The version of xercesImpl in the ip-bom is not published on Maven Central.
          Removing this override breaks Errai apps that don't have the JBoss nexus repository configured. -->
     <version.xerces.xercesImpl>2.11.0</version.xerces.xercesImpl>
-    <version.com.google.elemental2>1.0.0-beta-1</version.com.google.elemental2>
+    <version.com.google.elemental2>1.0.0</version.com.google.elemental2>
     <version.com.fasterxml.jackson>2.10.3</version.com.fasterxml.jackson>
     <version.org.jboss.websocket.spec>1.0.0.Final</version.org.jboss.websocket.spec>
+    <version.org.jboss.spec.javax.annotation.jboss-annotations-api_1.3_spec>1.0.0.Final
+    </version.org.jboss.spec.javax.annotation.jboss-annotations-api_1.3_spec>
     <version.org.mockito>2.12.0</version.org.mockito>
     <version.com.google.gwt.gwtmockito>1.1.7</version.com.google.gwt.gwtmockito>
     <version.org.powermock>2.0.0-beta.5</version.org.powermock>
@@ -450,6 +452,12 @@
         <groupId>org.jboss.spec.javax.websocket</groupId>
         <artifactId>jboss-websocket-api_1.0_spec</artifactId>
         <version>${version.org.jboss.websocket.spec}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.spec.javax.annotation</groupId>
+        <artifactId>jboss-annotations-api_1.3_spec</artifactId>
+        <version>${version.org.jboss.spec.javax.annotation.jboss-annotations-api_1.3_spec}</version>
       </dependency>
 
       <!-- This artifact is not managed in the ip-bom -->
