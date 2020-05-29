@@ -36,14 +36,18 @@
   instead of defining a new ones -->
   <properties>
     <apache.stanbol.htmlextractor.version>0.10.0</apache.stanbol.htmlextractor.version>
-    <asm.version>5.0.3</asm.version>
+    <asm.version>7.1</asm.version>
     <gmaven.mojo.version>1.5</gmaven.mojo.version>
     <guava.version>20.0</guava.version>
     <guice.version>3.0</guice.version>
     <gwt.phonegap.version>3.5.0.1</gwt.phonegap.version>
     <gwt.version>2.9.0</gwt.version>
+    <version.com.google.jsinterop>2.0.0</version.com.google.jsinterop>
+    <version.org.eclipse.jdt.ecj>3.18.0</version.org.eclipse.jdt.ecj>
+
     <!-- TODO test with 2.x version in ip-bom -->
     <hsqldb.version>1.8.0.7</hsqldb.version>
+    <javaee.api.version>7.0</javaee.api.version>
     <javaee.api.version>7.0</javaee.api.version>
     <jboss-integration-platform-bom.version>${project.parent.version}</jboss-integration-platform-bom.version>
     <!-- ip-bom uses artifact with groupId org.jboss.remoting3 -->
@@ -57,9 +61,12 @@
     <picketlink.version>2.6.0.Final</picketlink.version>
     <!-- TODO remove this when ip-bom version is greater (currently ip-bom is on 1.x) -->
     <quartz.version>2.1.6</quartz.version>
+
     <!-- Hibernate Validator 4.3.x coming from IP BOM is not compatible with GWT 2.8-beta1 -->
     <version.org.hibernate.validator>4.1.0.Final</version.org.hibernate.validator>
     <version.javax.validation>1.0.0.GA</version.javax.validation>
+    <version.javax.xml.bind.jaxb-api>2.3.1</version.javax.xml.bind.jaxb-api>
+
     <version.org.glassfish.javax.el>3.0.0</version.org.glassfish.javax.el>
     <version.org.lesscss>1.7.0.1.1</version.org.lesscss>
     <!-- The version of xercesImpl in the ip-bom is not published on Maven Central.
@@ -68,8 +75,7 @@
     <version.com.google.elemental2>1.0.0</version.com.google.elemental2>
     <version.com.fasterxml.jackson>2.10.3</version.com.fasterxml.jackson>
     <version.org.jboss.websocket.spec>1.0.0.Final</version.org.jboss.websocket.spec>
-    <version.org.jboss.spec.javax.annotation.jboss-annotations-api_1.3_spec>1.0.0.Final
-    </version.org.jboss.spec.javax.annotation.jboss-annotations-api_1.3_spec>
+    <version.org.jboss.spec.javax.annotation.jboss-annotations-api_1.3_spec>1.0.0.Final</version.org.jboss.spec.javax.annotation.jboss-annotations-api_1.3_spec>
     <version.org.mockito>2.12.0</version.org.mockito>
     <version.com.google.gwt.gwtmockito>1.1.7</version.com.google.gwt.gwtmockito>
     <version.org.powermock>2.0.0-beta.5</version.org.powermock>
@@ -231,6 +237,12 @@
       </dependency>
 
       <dependency>
+        <groupId>org.eclipse.jdt</groupId>
+        <artifactId>ecj</artifactId>
+        <version>${version.org.eclipse.jdt.ecj}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.apache.stanbol</groupId>
         <artifactId>org.apache.stanbol.enhancer.engines.htmlextractor</artifactId>
         <version>${apache.stanbol.htmlextractor.version}</version>
@@ -275,6 +287,12 @@
         <groupId>org.wildfly.core</groupId>
         <artifactId>wildfly-cli</artifactId>
         <version>${version.org.wildfly.core}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.xml.bind</groupId>
+        <artifactId>jaxb-api</artifactId>
+        <version>${version.javax.xml.bind.jaxb-api}</version>
       </dependency>
 
       <dependency>
