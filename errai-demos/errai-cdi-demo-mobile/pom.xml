@@ -117,6 +117,17 @@
   <dependencies>
     <dependency>
       <groupId>org.jboss.errai</groupId>
+      <artifactId>errai-codegen</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jdt</groupId>
+          <artifactId>ecj</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jboss.errai</groupId>
       <artifactId>errai-ioc</artifactId>
     </dependency>
 
@@ -128,6 +139,12 @@
     <dependency>
       <groupId>com.google.gwt</groupId>
       <artifactId>gwt-user</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-dev</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -163,20 +180,6 @@
       <groupId>org.jboss.errai</groupId>
       <artifactId>errai-cdi-jboss</artifactId>
       <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.logging</groupId>
-      <artifactId>jboss-logging</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
     </dependency>
 
     <dependency>
