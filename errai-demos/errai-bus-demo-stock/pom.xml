@@ -106,13 +106,6 @@
   </dependencyManagement>
 
   <dependencies>
-    <!-- Must be here because the gwt-maven-plugin snapshot has the wrong gwt-dev version. -->
-    <dependency>
-      <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-dev</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
     <!-- Runtime -->
     <dependency>
       <groupId>org.jboss.errai</groupId>
@@ -154,8 +147,6 @@
       <artifactId>errai-jboss-as-support</artifactId>
       <scope>${errai-jboss-as-support.scope}</scope>
     </dependency>
-
-
   </dependencies>
 
   <build>
@@ -292,7 +283,7 @@
       </activation>
       <properties>
         <webDescriptor>jetty</webDescriptor>
-        <errai-jboss-as-support.scope>provided</errai-jboss-as-support.scope>
+        <errai-jboss-as-support.scope>compile</errai-jboss-as-support.scope>
       </properties>
     </profile>
 
@@ -308,7 +299,7 @@
       <id>tomcat</id>
       <properties>
         <webDescriptor>tomcat</webDescriptor>
-        <errai-jboss-as-support.scope>provided</errai-jboss-as-support.scope>
+        <errai-jboss-as-support.scope>compile</errai-jboss-as-support.scope>
       </properties>
     </profile>
   </profiles>

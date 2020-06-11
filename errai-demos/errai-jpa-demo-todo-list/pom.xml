@@ -264,7 +264,7 @@
                   <pluginExecutionFilter>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>gwt-maven-plugin</artifactId>
-                    <versionRange>[2.4.0,)</versionRange>
+                    <versionRange>[2.9.0,)</versionRange>
                     <goals>
                       <goal>resources</goal>
                     </goals>
@@ -440,6 +440,7 @@
         </plugins>
       </build>
       <dependencies>
+        <dependency><groupId>xerces</groupId><artifactId>xercesImpl</artifactId><version>2.12.0.SP02</version></dependency>
         <dependency><groupId>org.jboss.errai</groupId><artifactId>errai-data-binding</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>org.jboss.errai</groupId><artifactId>errai-navigation</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>javax.inject</groupId><artifactId>javax.inject</artifactId><scope>provided</scope></dependency>

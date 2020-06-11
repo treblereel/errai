@@ -117,17 +117,6 @@
   <dependencies>
     <dependency>
       <groupId>org.jboss.errai</groupId>
-      <artifactId>errai-codegen</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jdt</groupId>
-          <artifactId>ecj</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>org.jboss.errai</groupId>
       <artifactId>errai-ioc</artifactId>
     </dependency>
 
@@ -139,12 +128,6 @@
     <dependency>
       <groupId>com.google.gwt</groupId>
       <artifactId>gwt-user</artifactId>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-dev</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -356,7 +339,7 @@
                   <pluginExecutionFilter>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>gwt-maven-plugin</artifactId>
-                    <versionRange>[2.4.0,)</versionRange>
+                    <versionRange>2.9.0</versionRange>
                     <goals>
                       <goal>resources</goal>
                     </goals>
@@ -441,6 +424,7 @@
         <dependency>
           <groupId>org.jboss.errai</groupId>
           <artifactId>errai-jboss-as-support</artifactId>
+          <scope>compile</scope>
         </dependency>
 
         <dependency>

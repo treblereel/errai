@@ -113,22 +113,10 @@
   </dependencyManagement>
 
   <dependencies>
-
     <dependency>
-      <groupId>org.jboss.errai</groupId>
-      <artifactId>errai-codegen</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.eclipse.jdt</groupId>
-          <artifactId>ecj</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-dev</artifactId>
-      <scope>provided</scope>
+      <groupId>org.jboss.spec.javax.annotation</groupId>
+      <artifactId>jboss-annotations-api_1.3_spec</artifactId>
+      <version>1.0.0.Final</version>
     </dependency>
 
     <dependency>
@@ -185,10 +173,10 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>gwt-maven-plugin</artifactId>
-        <version>${maven.gwt.plugin.version}</version>     
+        <version>${maven.gwt.plugin.version}</version>
         <configuration>
           <logLevel>INFO</logLevel>
-          <noServer>false</noServer>          
+          <noServer>false</noServer>
           <!-- Configuration for Errai's JBossLauncher. This launcher controls a Wildfly instance in a separate JVM.
             It's configuration is more complex but useful if you encounter classloading issues using the embedded launcher. -->
           <!--extraJvmArgs>-Xmx2048m -XX:CompileThreshold=7000 -Derrai.jboss.home=${errai.jboss.home} -Derrai.dev.context=${errai.dev.context} -Derrai.jboss.javaopts="-Derrai.jboss.javaagent.path=${settings.localRepository}/org/jboss/errai/errai-client-local-class-hider/${errai.version}/errai-client-local-class-hider-${errai.version}.jar</extraJvmArgs>
@@ -318,7 +306,7 @@
                   <pluginExecutionFilter>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>gwt-maven-plugin</artifactId>
-                    <versionRange>[2.5.0,)</versionRange>
+                    <version>2.9.0</version>
                     <goals>
                       <goal>resources</goal>
                     </goals>
@@ -370,7 +358,7 @@
           <plugin>
             <groupId>org.wildfly.plugins</groupId>
             <artifactId>wildfly-maven-plugin</artifactId>
-            <version>1.0.2.Final</version>
+            <version>2.0.2.Final</version>
             <extensions>false</extensions>
           </plugin>
         </plugins>
@@ -394,7 +382,7 @@
         <dependency><groupId>org.jboss.logging</groupId><artifactId>jboss-logging</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>org.jboss.spec.javax.interceptor</groupId><artifactId>jboss-interceptors-api_1.2_spec</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>org.jboss.spec.javax.transaction</groupId><artifactId>jboss-transaction-api_1.2_spec</artifactId><scope>provided</scope></dependency>
-        <dependency><groupId>xml-apis</groupId><artifactId>xml-apis</artifactId><scope>provided</scope></dependency>
+        <dependency><groupId>xerces</groupId><artifactId>xercesImpl</artifactId><version>2.12.0.SP02</version></dependency>
         <dependency><groupId>io.netty</groupId><artifactId>netty-codec-http</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>io.netty</groupId><artifactId>netty-handler</artifactId><scope>provided</scope></dependency>      </dependencies>
     </profile>

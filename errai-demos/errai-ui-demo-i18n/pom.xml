@@ -61,8 +61,7 @@
     <maven.clean.plugin.version>2.4.1</maven.clean.plugin.version>
     <maven.deploy.plugin.version>2.7</maven.deploy.plugin.version>
     <maven.resources.plugin.version>2.6</maven.resources.plugin.version>  
-    <version>${maven.compiler.plugin.version}</version>  
-    <jetty.version>6.1.25</jetty.version>
+    <version.org.eclipse.jetty>9.2.14.v20151106</version.org.eclipse.jetty>
     <jboss-as-maven-plugin.version>7.4.Final</jboss-as-maven-plugin.version>
     <maven.gwt.plugin.version>2.9.0</maven.gwt.plugin.version>
   </properties>
@@ -119,11 +118,6 @@
     <!-- Must be here because the gwt-maven-plugin snapshot has the wrong gwt-dev version. -->
     <dependency>
       <groupId>com.google.gwt</groupId>
-      <artifactId>gwt-dev</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.gwt</groupId>
       <artifactId>gwt-user</artifactId>
       <scope>provided</scope>
     </dependency>
@@ -138,6 +132,17 @@
       <artifactId>jboss-ejb-api_3.2_spec</artifactId>
       <scope>provided</scope>
     </dependency>
+
+    <dependency><!-- This must be placed above com.google.gwt:gwt-dev to override the Jetty that is present there -->
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlet</artifactId>
+      <version>${version.org.eclipse.jetty}</version>
+    </dependency>
+<!--    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-servlets</artifactId>
+      <version>${version.org.eclipse.jetty}</version>
+    </dependency>-->
 
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -314,7 +319,7 @@
                   <pluginExecutionFilter>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>gwt-maven-plugin</artifactId>
-                    <versionRange>[2.4.0,)</versionRange>
+                    <versionRange>[2.9.0,)</versionRange>
                     <goals>
                       <goal>resources</goal>
                     </goals>

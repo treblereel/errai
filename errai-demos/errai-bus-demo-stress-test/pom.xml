@@ -152,6 +152,12 @@
       <artifactId>javax.inject</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.jboss.errai</groupId>
+      <artifactId>errai-jboss-as-support</artifactId>
+      <scope>${errai-jboss-as-support.scope}</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -164,8 +170,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven.compiler.plugin.version}</version>
         <configuration>
-          <source>11</source>
-          <target>11</target>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
       <plugin>
@@ -264,7 +270,7 @@
                   <pluginExecutionFilter>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>gwt-maven-plugin</artifactId>
-                    <versionRange>[2.3.0,)</versionRange>
+                    <versionRange>2.9.0</versionRange>
                     <goals>
                       <goal>resources</goal>
                     </goals>
@@ -289,7 +295,7 @@
       </activation>
       <properties>
         <webDescriptor>jetty</webDescriptor>
-        <errai-jboss-as-support.scope>provided</errai-jboss-as-support.scope>
+        <errai-jboss-as-support.scope>compile</errai-jboss-as-support.scope>
       </properties>
     </profile>
 
@@ -325,9 +331,7 @@
         <dependency><groupId>org.jboss.errai</groupId><artifactId>errai-tools</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>org.jboss.logging</groupId><artifactId>jboss-logging</artifactId><scope>provided</scope></dependency>
 
-        <dependency><groupId>org.jboss.spec.javax.interceptor</groupId><artifactId>jboss-interceptors-api_1.1_spec</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>org.jboss.spec.javax.ws.rs</groupId><artifactId>jboss-jaxrs-api_2.1_spec</artifactId><scope>provided</scope></dependency>
-        <dependency><groupId>org.jboss.spec.javax.transaction</groupId><artifactId>jboss-transaction-api_1.1_spec</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>org.jboss.weld.servlet</groupId><artifactId>weld-servlet-core</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>xml-apis</groupId><artifactId>xml-apis</artifactId><scope>provided</scope></dependency>
         <dependency><groupId>io.netty</groupId><artifactId>netty-codec-http</artifactId><scope>provided</scope></dependency>
@@ -346,7 +350,7 @@
       <id>tomcat</id>
       <properties>
         <webDescriptor>tomcat</webDescriptor>
-        <errai-jboss-as-support.scope>provided</errai-jboss-as-support.scope>
+        <errai-jboss-as-support.scope>compile</errai-jboss-as-support.scope>
       </properties>
     </profile>
   </profiles>

@@ -352,12 +352,6 @@
         </dependency>
 
         <dependency>
-          <groupId>com.google.gwt</groupId>
-          <artifactId>gwt-dev</artifactId>
-          <scope>compile</scope>
-        </dependency>
-
-        <dependency>
           <groupId>javax.validation</groupId>
           <artifactId>validation-api</artifactId>
           <scope>compile</scope>
@@ -386,7 +380,11 @@
           <artifactId>errai-javax-enterprise</artifactId>
           <scope>provided</scope>
         </dependency>
-
+        <dependency>
+          <groupId>org.jboss.errai</groupId>
+          <artifactId>errai-jboss-as-support</artifactId>
+          <scope>${errai-jboss-as-support.scope}</scope>
+        </dependency>
       </dependencies>
     </profile>
 
