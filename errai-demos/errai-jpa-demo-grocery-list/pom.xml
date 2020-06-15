@@ -64,7 +64,7 @@
     <maven.deploy.plugin.version>2.9.0</maven.deploy.plugin.version>
     <argLine></argLine>
     <skipTests>true</skipTests>
-    <errai.jboss.home>${project.build.directory}/wildfly-${wildfly.version}</errai.jboss.home>    
+    <errai.jboss.home>${project.build.directory}/wildfly-${wildfly.version}</errai.jboss.home>
     <errai.dev.context>${project.artifactId}</errai.dev.context>
     <wildfly.version>18.0.1.Final</wildfly.version>
   </properties>
@@ -123,7 +123,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-
     <dependency>
       <groupId>org.jboss.errai</groupId>
       <artifactId>errai-annotation-processors</artifactId>
@@ -212,7 +211,7 @@
         <exclusion>
           <groupId>javax.inject</groupId>
           <artifactId>javax.inject</artifactId>
-        </exclusion>        
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -222,7 +221,7 @@
         <exclusion>
           <groupId>javax.inject</groupId>
           <artifactId>javax.inject</artifactId>
-        </exclusion>        
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
@@ -263,6 +262,11 @@
     <dependency>
       <groupId>com.google.gwt</groupId>
       <artifactId>gwt-user</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-dev</artifactId>
       <scope>provided</scope>
     </dependency>
 
@@ -341,7 +345,7 @@
           <artifactId>errai-tools</artifactId>
           <scope>provided</scope>
         </dependency>
-        
+
         <dependency>
           <groupId>javax.inject</groupId>
           <artifactId>javax.inject</artifactId>
@@ -409,7 +413,7 @@
           <runTarget>${errai.dev.context}</runTarget>
           <extraJvmArgs>${argLine} -Xmx1g -Xms1g -XX:+AggressiveOpts -XX:+UseNUMA -Derrai.jboss.home=${errai.jboss.home} -Derrai.dev.context=${errai.dev.context}</extraJvmArgs>
           <soyc>false</soyc>
-          <hostedWebapp>src/main/webapp/</hostedWebapp>                
+          <hostedWebapp>src/main/webapp/</hostedWebapp>
           <compileReport>true</compileReport>
         </configuration>
         <executions>

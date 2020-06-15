@@ -122,6 +122,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-dev</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.errai</groupId>
       <artifactId>errai-javaee-all</artifactId>
     </dependency>
@@ -138,11 +143,6 @@
       <artifactId>jetty-servlet</artifactId>
       <version>${version.org.eclipse.jetty}</version>
     </dependency>
-<!--    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlets</artifactId>
-      <version>${version.org.eclipse.jetty}</version>
-    </dependency>-->
 
     <dependency>
       <groupId>org.slf4j</groupId>

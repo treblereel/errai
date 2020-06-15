@@ -106,6 +106,17 @@
   </dependencyManagement>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.jboss.errai</groupId>
+      <artifactId>errai-codegen</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.jdt</groupId>
+          <artifactId>ecj</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
     <!-- Runtime -->
     <dependency>
       <groupId>org.jboss.errai</groupId>
@@ -143,6 +154,12 @@
     </dependency>
 
     <dependency>
+      <groupId>com.google.gwt</groupId>
+      <artifactId>gwt-dev</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.jboss.errai</groupId>
       <artifactId>errai-jboss-as-support</artifactId>
       <scope>${errai-jboss-as-support.scope}</scope>
@@ -166,7 +183,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>gwt-maven-plugin</artifactId>
-        <version>${maven.gwt.plugin.version}</version>    
+        <version>${maven.gwt.plugin.version}</version>
         <configuration>
           <logLevel>INFO</logLevel>
           <runTarget>App.html</runTarget>
@@ -264,7 +281,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <execute />
+                    <execute/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -283,7 +300,7 @@
       </activation>
       <properties>
         <webDescriptor>jetty</webDescriptor>
-        <errai-jboss-as-support.scope>compile</errai-jboss-as-support.scope>
+        <errai-jboss-as-support.scope>provided</errai-jboss-as-support.scope>
       </properties>
     </profile>
 
