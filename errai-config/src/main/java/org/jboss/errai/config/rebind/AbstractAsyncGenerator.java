@@ -185,6 +185,10 @@ public abstract class AbstractAsyncGenerator extends Generator implements AsyncC
 
     try {
       final PrintWriter printWriter = context.tryCreate(logger, packageName, className);
+      System.out.println("packageName " + packageName);
+      System.out.println("className " + className);
+
+
       if (printWriter != null) {
         final Future<String> future = AsyncGenerationJob.createBuilder()
             .treeLogger(logger)
